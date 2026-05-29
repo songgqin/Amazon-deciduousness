@@ -1,4 +1,4 @@
-# Amazon Deciduousness, Phenology, and GPP Analysis Code
+# Amazon Deciduousness Phenology
 
 This repository contains cleaned research code for Amazon forest deciduousness mapping, seasonality assessment, driver exploration, leaf-age modeling, Sentinel-2 unmixing, and LUE-based GPP experiments.
 
@@ -46,9 +46,9 @@ data/validation/            Eddy-flux and ground-validation tables
 `data/sentinel2/rja_shared/` keeps a site/year directory structure because `code/sentinel2_site_unmixing.py` iterates over that hierarchy. Duplicate filenames from different source folders were unified by keeping distinct descriptive names:
 
 - `data/seasonality/BRDF_EVI_3years_mean.tif` for Figure 2 seasonality.
+- `data/deciduousness/Composite_Data_5km_gf_3y.tif` for Figure 2 plotting.
 - `data/gpp/inputs/GPP_BRDF_EVI.tif` for GPP experiments.
 - `data/deciduousness/Composite_Data_5km_gf_3y.tif` for main/GPP workflows.
-- `data/deciduousness/Figure2_Composite_Data_5km_gf_3y.tif` for Figure 2 plotting.
 
 
 ## Main Workflows
@@ -73,8 +73,4 @@ GPP-related scripts use the shared `gpp_` filename prefix. Savitzky-Golay gap fi
 
 `code/site_ground_evaluation.py` and `code/site_phenocam_evaluation.py` run site-level validation analyses.
 
-## Runtime Notes
 
-The workflows are data-intensive and some scripts launch long raster or multiprocessing jobs when run end-to-end. A Miniconda/PyCharm-compatible smoke check is summarized in `docs/runtime_check_miniconda.md`.
-
-Generated files should be written to `outputs/`. Keep large input rasters in `data/` with Git LFS, or store them externally and refill them locally before running the workflows.
