@@ -53,7 +53,6 @@ data/validation/            Eddy-flux and ground-validation tables
 
 ## Main Workflows
 
-GPP-related scripts use the shared `gpp_` filename prefix. Savitzky-Golay gap filling is standardized through `code/sg_smooth.py`.
 
 `code/sentinel2_site_unmixing.py` runs the IG-ECAE Sentinel-2 unmixing workflow.
 
