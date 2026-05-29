@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.idea/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+.DS_Store
+
+outputs/*
+!outputs/.gitkeep
+!outputs/figures/
+outputs/figures/*
+!outputs/figures/.gitkeep

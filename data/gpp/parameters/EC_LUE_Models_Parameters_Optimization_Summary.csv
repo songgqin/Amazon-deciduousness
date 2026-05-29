@@ -1,0 +1,3 @@
+﻿Model,Optimized Parameters (Median with 95% CI),Parameter Bounds,Loss Function,LOSO_R(Pooled),LOSO_RMSE(Site-avg),LOSO_Tau(Site-avg),Global_R(Pooled),Global_RMSE(Site-avg),Global_Tau(Site-avg)
+EC_LUE_LD_Age,"Emax = 2.43 (1.94, 3.42)
+VPD0 = 0.86 (0.44, 1.44)","Emax=[1.5, 4.5]; VPD0=[0.4, 1.5]","Weighted site loss: site_loss=50*rmae+20*rbias+10*corr_loss+5*amp_loss, rmae=MAE/mean(abs(obs)), rbias=abs(mean(sim)-mean(obs))/mean(abs(obs)), corr_loss=1-r, amp_loss=abs(std(sim)-std(obs))/std(obs); total=0.75*mean(site_loss)+0.25*p80(site_loss)",0.591,1.004,0.606,0.692,0.792,0.606
