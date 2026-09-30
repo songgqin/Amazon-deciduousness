@@ -85,7 +85,7 @@ _, _, EVI_amazon = readTif_gdal(EVI_path)
 EVI_amazon = cv2.resize(EVI_amazon, (raws_y, columns_x))
 EVI_amazon = EVI_amazon
 
-rainfall_path = r'data/climate/precipiation.tif'
+rainfall_path = r'data/drivers/inputs/hydroclimate_precipitation_ERA.tif'
 _geo, _prj, rainfall = readTif_gdal(rainfall_path)
 rainfall = cv2.resize(rainfall, (raws_y, columns_x))
 
@@ -137,43 +137,44 @@ x_list = np.arange(12)
 month_list = np.arange(1, 13)
 time_lag = copy.deepcopy(cor_par_forest_res) * np.nan
 
-for i in tqdm(np.arange(0, dec_month_forest_res.shape[0])):
+pair_valid = ~np.isnan(dec_month_forest_res) & ~np.isnan(evi_forest_res)
+pair_count = pair_valid.sum(axis=1)
+pair_dec_sum = np.nansum(np.where(pair_valid, dec_month_forest_res, np.nan), axis=1)
+valid_rows = (pair_count >= 3) & (pair_dec_sum != 0)
 
-    x_raw_list = ~np.isnan(dec_month_forest_res[i]) & ~np.isnan(evi_forest_res[i])
+dec_pair = np.where(pair_valid, dec_month_forest_res, np.nan)
+evi_pair = np.where(pair_valid, evi_forest_res, np.nan)
+dec_centered = dec_pair - np.nanmean(dec_pair, axis=1, keepdims=True)
+evi_centered = evi_pair - np.nanmean(evi_pair, axis=1, keepdims=True)
+cor_num = np.nansum(dec_centered * evi_centered, axis=1)
+cor_den = np.sqrt(np.nansum(dec_centered ** 2, axis=1) * np.nansum(evi_centered ** 2, axis=1))
+with np.errstate(divide='ignore', invalid='ignore'):
+    cor_forest_res[valid_rows] = cor_num[valid_rows] / cor_den[valid_rows]
 
-    x_raw_month = x_list[x_raw_list]
+# Fill each EVI series using the same cyclic interpolation as the original loop.
+evi_repeat = np.concatenate([evi_forest_res, evi_forest_res], axis=1)
+evi_repeat = pd.DataFrame(evi_repeat).interpolate(method='linear', axis=1).to_numpy()
+evi_filled = evi_repeat[:, :12].copy()
+missing_evi = np.isnan(evi_filled)
+evi_filled[missing_evi] = evi_repeat[:, 12:24][missing_evi]
 
-    dec_list = dec_month_forest_res[i][x_raw_list]
-    evi_list = evi_forest_res[i][x_raw_list]
+dec_repeated = np.concatenate([dec_month_forest_res, dec_month_forest_res], axis=1)
+cor_by_lag = np.full((dec_repeated.shape[0], 12), np.nan, dtype=np.float32)
+for shift_id in range(12):
+    x_lag = dec_repeated[:, shift_id:shift_id + 12]
+    lag_valid = ~np.isnan(x_lag) & ~np.isnan(evi_filled)
+    x_mean = np.nanmean(np.where(lag_valid, x_lag, np.nan), axis=1, keepdims=True)
+    y_mean = np.nanmean(np.where(lag_valid, evi_filled, np.nan), axis=1, keepdims=True)
+    x_centered = np.where(lag_valid, x_lag - x_mean, np.nan)
+    y_centered = np.where(lag_valid, evi_filled - y_mean, np.nan)
+    numerator = np.nansum(x_centered * y_centered, axis=1)
+    denominator = np.sqrt(np.nansum(x_centered ** 2, axis=1) * np.nansum(y_centered ** 2, axis=1))
+    with np.errstate(divide='ignore', invalid='ignore'):
+        cor_by_lag[:, shift_id] = numerator / denominator
 
-    if np.sum(dec_list) == 0 or len(dec_list)<3:
-        continue
-
-    cor_forest_res[i] = np.corrcoef(dec_list, evi_list)[0, 1]
-
-    x = copy.deepcopy(dec_month_forest_res[i])
-    y = copy.deepcopy(evi_forest_res[i])
-
-    if np.sum(np.isnan(y)) > 0:
-        y_repeat = np.append(y, y, axis=0)
-        y_repeat = pd.DataFrame(y_repeat).interpolate(method='linear').to_numpy().reshape(-1)
-        y = y_repeat[:12]
-        y[np.isnan(y)] = y_repeat[12:24][np.isnan(y)]
-
-    cor_list = []
-    dec_repeated = np.append(x, x, axis=0)
-
-    p_value_list = []
-
-    for shift_id in range(12):
-        cor_list.append(np.corrcoef(dec_repeated[shift_id:shift_id + 12], y)[0, 1])
-        p_value_list.append(stats.pearsonr(dec_repeated[shift_id:shift_id + 12], y)[1])
-
-    lag = np.argmax(np.array(cor_list))
-
-    p_value_forest_res[i] = p_value_list[lag]
-
-    time_lag[i] = lag
+cor_by_lag[~valid_rows, :] = np.nan
+lag = np.argmax(np.where(np.isnan(cor_by_lag), -np.inf, cor_by_lag), axis=1)
+time_lag[valid_rows] = lag[valid_rows]
 
 cor_np[forest_mask_res] = cor_forest_res
 cor_np_map = cor_np.reshape(columns_x, raws_y)
@@ -192,6 +193,10 @@ time_lag_map2[time_lag_map2 > 6] = 12 - time_lag_map2[time_lag_map2 > 6]
 
 cor_np_map[~forest_mask] = np.nan
 
-save_path = r'data/seasonality/time_lag_map_0521.tif'
+os.makedirs(r'outputs/seasonality', exist_ok=True)
+save_path = r'outputs/seasonality/time_lag_map_0521.tif'
 
 save_tif(time_lag_map2, save_path, _geo, _prj, 1)
+
+correlation_path = r'outputs/seasonality/Cor_Dec_EVI_0521.tif'
+save_tif(cor_np_map, correlation_path, _geo, _prj, 1)

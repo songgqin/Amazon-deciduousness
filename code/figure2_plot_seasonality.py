@@ -114,7 +114,7 @@ def mean_confidence_interval(data, confidence=0.95):
     return m, m - h, m + h
 
 raws_y, columns_x = 786, 650
-cls_modis_path = r'data/forest_mask/MCD12Q1_Amazon_500m.tif'
+cls_modis_path = r'data/forest_mask/MCD12Q1_Amazon.tif'
 
 _, _, cls_md = readTif_gdal(cls_modis_path)
 cls_md_forest = copy.deepcopy(cls_md)
@@ -131,11 +131,11 @@ raws_y, colums_x = 786, 650
 
 print(">>> Loading 2019-2021 deciduousness and EVI data to calculate interannual variation...")
 
-rainfall_path = r'data/climate/hydroclimate_precipitation_ERA.tif'
+rainfall_path = r'data/drivers/inputs/hydroclimate_precipitation_ERA.tif'
 _geo, _prj, rainfall = readTif_gdal(rainfall_path)
 rainfall = cv2.resize(rainfall.astype(np.float32), (raws_y, colums_x)) * 1000.0
 
-time_lag_path = r'data/seasonality/time_lag_map_0521.tif'
+time_lag_path = r'outputs/seasonality/time_lag_map_0521.tif'
 _, _, time_lag = readTif_gdal(time_lag_path)
 
 evi_dir = r'data/seasonality'
@@ -163,7 +163,7 @@ for year in [2019, 2020, 2021]:
     dec_years_data.append(d/1000.0)
 dec_stack = np.stack(dec_years_data, axis=0)
 
-dec_mean_path = r'data/deciduousness/Figure2_Composite_Data_5km_gf_3y.tif'
+dec_mean_path = r'data/deciduousness/Composite_Data_5km_gf_3y.tif'
 _geo, _prj, dec_mean_basin = readTif_gdal(dec_mean_path)
 
 dec_mean_basin = dec_mean_basin.astype(np.float32)
@@ -332,13 +332,14 @@ for j in range(2):
 
 plt.show()
 
+os.makedirs(r'outputs/figures', exist_ok=True)
 save_path = r'outputs/figures/FigMF_2_Seasonality_Dec_EVI.png'
 plt.savefig(save_path, bbox_inches='tight', dpi=300)
 
-time_lag_path = r'data/seasonality/time_lag_map_0521.tif'
+time_lag_path = r'outputs/seasonality/time_lag_map_0521.tif'
 _geo, _prj, time_lag = readTif_gdal(time_lag_path)
 
-correlation_path = r'data/seasonality/Cor_Dec_EVI_0521.tif'
+correlation_path = r'outputs/seasonality/Cor_Dec_EVI_0521.tif'
 
 _, _, correlation_map = readTif_gdal(correlation_path)
 

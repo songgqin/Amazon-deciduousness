@@ -385,6 +385,9 @@ arrows = [
     (0.75, 0.5 * np.sqrt(3) / 2, 120)
 ]
 
+import os
+os.makedirs(r'outputs/figures', exist_ok=True)
+fig.savefig(r'outputs/figures/Fig3_Driver_Map.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 color_list = [
@@ -433,6 +436,7 @@ ax.tick_params(axis='both', labelsize=10, direction='out', colors='k', length=3,
                labelleft=True, labelright=False, labeltop=True, labelbottom=False, zorder=10)
 
 save_path = r'outputs/figures/Dominant_asynchrony_herbivory_four_class.png'
+fig.savefig(save_path, dpi=300, bbox_inches='tight')
 
 from shapely.wkt import loads as load_wkt
 import rasterio
@@ -469,12 +473,12 @@ with rasterio.open(dominant_path) as src:
         unique, counts = np.unique(out_image_res, return_counts=True)
         counts_pro = counts / np.sum(counts)
 
-        print(polygons_name[i],'Hydroclimate: {:.3f}, PAR: {:.3f}, Soil: {:.3f}, VPD: {:.3f}'.format(counts_pro[1], counts_pro[0], counts_pro[2], counts_pro[4]))
+        print(polygons_name[i], 'Herbivory classes:', np.round(counts_pro, 3))
 
 dominant_res = dominant[~np.isnan(dominant)]
 unique, counts = np.unique(dominant_res, return_counts=True)
 counts_pro = counts / np.sum(counts)
-print('Proportion of the area Hydroclimate: {:.3f}, PAR: {:.3f}, Soil: {:.3f}, VPD: {:.3f}'.format(counts_pro[1], counts_pro[0], counts_pro[2], counts_pro[4]))
+print('Proportion of the area by herbivory class:', np.round(counts_pro, 3))
 
 dominant_path = r'data/drivers/Asynchrony_shap_map_3type_drivers_0818.tif'
 
@@ -501,4 +505,4 @@ print('Proportion of the Basin Hydroclimate: {:.3f}, PAR: {:.3f}, Soil: {:.3f}'.
 dominant_res = dominant[~np.isnan(dominant)]
 unique, counts = np.unique(dominant_res, return_counts=True)
 counts_pro = counts / np.sum(counts)
-print('Proportion of the area Hydroclimate: {:.3f}, PAR: {:.3f}, Soil: {:.3f}, VPD: {:.3f}'.format(counts_pro[1], counts_pro[0], counts_pro[2], counts_pro[4]))
+print('Proportion of the area by driver class:', np.round(counts_pro, 3))

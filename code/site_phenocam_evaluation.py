@@ -143,7 +143,7 @@ def find_timeseries_custom(image_series, target_series, center_x, center_y,
 
     return max_r, best_window_series, best_window_pos
 
-raws_y, columns_x = 15724, 13004
+raws_y, columns_x = 786, 650
 cls_modis_path = r'data/forest_mask/MCD12Q1_Amazon.tif'
 
 _, _, cls_md = readTif_gdal(cls_modis_path)
@@ -194,7 +194,7 @@ for site_name in phencoam_site:
 
     phenocam_value_list.append(phenocam_seasonality)
 
-dec_path = r'data/deciduousness/Composite_Data_250m_gf_3y.tif'
+dec_path = r'data/deciduousness/Composite_Data_5km_gf_3y.tif'
 
 _geo, _prj, dec_month = readTif_gdal(dec_path)
 
@@ -325,3 +325,6 @@ ax.legend(loc='lower right', fontsize=6, frameon=True, ncol=1)
 
 print('mean r: %.2f' % np.mean(r_list))
 print('rmse: %.2f' % np.mean(rmse_list))
+
+os.makedirs(r'outputs/figures', exist_ok=True)
+plt.savefig(r'outputs/figures/Extended_Data_Fig2_Phenocam_Validation.png', dpi=300, bbox_inches='tight')

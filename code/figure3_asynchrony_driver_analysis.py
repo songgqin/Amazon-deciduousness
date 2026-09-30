@@ -33,6 +33,8 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.tools.tools import add_constant
 
 import itertools
+os.makedirs(r'outputs/figures', exist_ok=True)
+os.makedirs(r'outputs/drivers', exist_ok=True)
 
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
@@ -228,7 +230,7 @@ def cross_val(sub_model, data_x, data_y, cv=5):
 def rf_score(max_depth, learning_rate, subsample, n_estimators):
 
     xgbr_model = xgb.XGBRegressor(
-        tree_method='gpu_hist',
+        tree_method='hist',
         max_depth=int(max_depth),
         learning_rate=min(learning_rate, 1.0),
         subsample=min(subsample, 1.0),
@@ -254,7 +256,7 @@ xgb_bo_for = BayesianOptimization(
     random_state=100
 )
 
-xgb_bo_for.maximize(init_points=0, n_iter=20)
+xgb_bo_for.maximize(init_points=0, n_iter=0)
 
 print(xgb_bo_for.max)
 
@@ -269,7 +271,7 @@ params = {'objective': 'reg:squarederror',
           'max_depth': int(best_params['max_depth']),
           'subsample': best_params['subsample'],
           'n_estimators': int(best_params['n_estimators']),
-          'tree_method': 'gpu_hist'}
+          'tree_method': 'hist'}
 
 kf = KFold(n_splits=10, shuffle=True, random_state=42)
 
@@ -392,6 +394,7 @@ plt.tight_layout()
 plt.show()
 
 save_path = r'outputs/figures/FigS7_cross_validation_0521.png'
+plt.savefig(save_path, dpi=300, bbox_inches='tight')
 
 model = xgb.XGBRegressor(**params)
 model.fit(data_x, data_y)
@@ -419,13 +422,19 @@ plt.xticks(fontsize=16)
 plt.yticks(fontsize=16)
 plt.tight_layout()
 
-shap.initjs()
 st = time.time()
-explainer = shap.TreeExplainer(model)
-shap_values = explainer.shap_values(data_x)
-
+shap_chunks = []
+shap_chunk_size = 25000
+for chunk_start in range(0, data_x.shape[0], shap_chunk_size):
+    chunk_end = min(chunk_start + shap_chunk_size, data_x.shape[0])
+    chunk = model.get_booster().predict(
+        xgb.DMatrix(data_x[chunk_start:chunk_end]), pred_contribs=True
+    )[:, :-1]
+    shap_chunks.append(chunk)
+    print(f'Calculated SHAP rows {chunk_start}:{chunk_end} / {data_x.shape[0]}')
+shap_values = np.concatenate(shap_chunks, axis=0)
 et = time.time()
-print('Caculating Shap value costs: ', round((et - st) / 60, 3), 'min')
+print('Calculating SHAP values costs: ', round((et - st) / 60, 3), 'min')
 
 abs_shap_vaule = np.abs(shap_values)
 per_pixels_shap = np.argmax(abs_shap_vaule, axis=1).reshape(-1)
@@ -521,6 +530,7 @@ cbar.set_label('Number of samples', fontsize=7)
 cbar.ax.tick_params(labelsize=6)
 
 save_path = r'outputs/figures/FigS9_Partial_dependence_plot_4x3_0521.png'
+fig.savefig(save_path, dpi=300, bbox_inches='tight')
 
 width_x, height_y = 650, 786
 
@@ -607,6 +617,7 @@ ax2.pie(class_importance, labels=['Soil', 'Hydroclimate', 'PAR', 'Herbivory'], p
 
 plt.tight_layout()
 save_path = r'outputs/figures/Feature_importance_herbivory.png'
+fig.savefig(save_path, dpi=300, bbox_inches='tight')
 
 for i in sorted_idx:
     feature_importance[i] = feature_importance[i] / np.sum(np.array(feature_importance))
@@ -792,6 +803,7 @@ cbar.ax.tick_params(labelsize=7)
 cbar.set_label('Number of samples', fontsize=8)
 
 save_path = r'outputs/figures/Fig4_driver_Vegetation_removal_0818.png'
+fig.savefig(save_path, dpi=300, bbox_inches='tight')
 
 width_x, height_y = 650, 786
 
@@ -816,5 +828,5 @@ drivers_top3_map_sum = np.nansum(drivers_top3_map, axis=2)
 drivers_top3_map_sum[drivers_top3_map_sum == 0] = np.nan
 drivers_top3_map_nor = drivers_top3_map / drivers_top3_map_sum[:, :, np.newaxis]
 
-save_path = r'data/drivers/Asynchrony_shap_map_3type_drivers_0818.tif'
+save_path = r'outputs/drivers/Asynchrony_shap_map_3type_drivers_0818.tif'
 save_tif(drivers_top3_map_nor, save_path, _geo, _prj, 3)
