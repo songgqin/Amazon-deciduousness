@@ -1,10 +1,9 @@
 """Reproduce the manuscript-facing main-figure inputs and visual checks.
 
-This entry point is deliberately small and deterministic.  The source scripts in
-``code/mainfigure_materials`` are the source materials used during manuscript
-production; this script provides a repository-relative, non-interactive check
-for the raster inputs and renders the Figure 2 map/time-series composite plus
-the Figure 3 three-driver map from the released inputs.
+This entry point is deliberately small and deterministic. It provides a
+repository-relative, non-interactive check for the raster inputs and renders
+the Figure 2 map/time-series composite plus the Figure 3 three-driver map from
+the released inputs.
 
 Run from any working directory with the repository Python environment::
 
@@ -245,7 +244,7 @@ def figure3_map(strict: bool = False) -> Path:
 
 def main() -> None:
     print("Repository root:", ROOT)
-    outputs = [figure2(), figure3_map()]
+    outputs = [figure2(), figure3_map(strict=True)]
     for path in outputs:
         print("Wrote:", path)
 

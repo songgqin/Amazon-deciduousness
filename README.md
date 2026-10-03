@@ -74,9 +74,14 @@ data/validation/            Eddy-flux and ground-validation tables
 
 ## Main-text Reproduction Release
 
-The manuscript-facing source materials are preserved in `code/mainfigure_materials/`. These are the five scripts supplied from `Materials_for_mainfigure` plus the local public-data Figure 3 source mirror. Their original hard-coded workstation paths and interactive Qt backend are intentionally preserved for provenance; the repository-relative checks below are the runnable entry points.
+The manuscript-facing source-material bundle is intentionally not included in
+this repository. The repository-relative scripts below are the runnable entry
+points for the released inputs.
 
-The corresponding public data release is copied, without renaming, under `data/maintext_release/`. This additive directory contains the 26 files released with the manuscript and is tracked with Git LFS for raster files. `data/maintext_release/README.md` records the source and scope.
+The corresponding public data release is copied, without renaming, under
+`data/maintext_release/`. This additive directory contains the 26 files
+released with the manuscript and is tracked with Git LFS for raster files.
+`data/maintext_release/README.md` records the source and scope.
 
 For a repository-relative, non-interactive raster check and Figure 2/Figure 3e rendering, run:
 

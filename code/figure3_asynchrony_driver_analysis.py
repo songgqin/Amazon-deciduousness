@@ -1,9 +1,16 @@
-"""Figure 3 asynchrony driver analysis.
+"""Reproduce Figure 3 from the repository inputs using the manuscript model.
 
+Requires XGBoost 3.0.4 with CUDA support for the original ``gpu_hist`` model.
+Each run is written to a new outputs/drivers/figure3_runs directory; the released
+raster is never overwritten automatically. Numerical manuscript gates run before
+the new raster is saved. Run with the same environment as the validated model.
 """
 
 # In[] Imports
-from bayes_opt import BayesianOptimization
+import argparse
+import hashlib
+import json
+from datetime import datetime
 import seaborn as sns
 from scipy import stats
 from amazon_preprocessing import readTif_gdal
@@ -15,6 +22,8 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import time
 import os
+import sys
+from pathlib import Path
 import xgboost as xgb
 import cv2
 import matplotlib
@@ -33,8 +42,23 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.tools.tools import add_constant
 
 import itertools
-os.makedirs(r'outputs/figures', exist_ok=True)
-os.makedirs(r'outputs/drivers', exist_ok=True)
+
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+
+ROOT = Path(__file__).resolve().parents[1]
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--output-dir', type=Path, help='New directory for this run.')
+args = parser.parse_args()
+OUTPUT = (args.output_dir or ROOT / 'outputs/drivers/figure3_runs' /
+          datetime.now().strftime('%Y%m%d_%H%M%S_%f')).resolve()
+OUTPUT.mkdir(parents=True, exist_ok=False)
+FIGURES = OUTPUT / 'figures'
+FIGURES.mkdir()
+if xgb.__version__ != '3.0.4':
+    raise RuntimeError('Figure 3 exact reproduction requires xgboost==3.0.4; '
+                       'do not silently switch tree method or library version.')
+print('Figure 3 run:', OUTPUT, flush=True)
 
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
@@ -63,7 +87,7 @@ def save_tif(grouthTif, savePath, Geo_, Projection_, nbands):
     else:
         for i in range(nbands):
             outputData.GetRasterBand(i + 1).WriteArray(grouthTif[:, :, i])
-            outputData.GetRasterBand(1).SetNoDataValue(np.nan)
+            outputData.GetRasterBand(i + 1).SetNoDataValue(np.nan)
 
     del outputData
 
@@ -84,7 +108,7 @@ def remove_outliers(datax, datay):
     return df_filtered['datax'].values, df_filtered['datay'].values
 
 raws_y, columns_x = 786, 650
-cls_modis_path = r'data/forest_mask/MCD12Q1_Amazon.tif'
+cls_modis_path = str(ROOT / 'data/forest_mask/MCD12Q1_Amazon.tif')
 
 _, _, cls_md = readTif_gdal(cls_modis_path)
 cls_md_forest = copy.deepcopy(cls_md)
@@ -97,7 +121,7 @@ forest_mask = ~np.isnan(cls_modis_coarse)
 ind_where = np.where(forest_mask == 1)
 print('evergreen forest pixels:', len(ind_where[0]))
 
-variables_dir = r'data/drivers/inputs'
+variables_dir = str(ROOT / 'data/drivers/inputs')
 
 variable_lists = [
     'climate_par.tif',
@@ -110,7 +134,8 @@ variable_lists = [
     'soil_sand.tif',
 ]
 
-variable_lists.sort()
+# Preserve the original feature order. The public release renamed herbivory,
+# so a lexical sort would move it before precipitation and change the SHAP groups.
 
 test_variable_list = variable_lists
 variables_all = np.zeros((650, 786, len(test_variable_list)))
@@ -174,7 +199,7 @@ vif_data = add_constant(pd_data)
 vif = pd.Series([variance_inflation_factor(vif_data.values, i) for i in range(vif_data.shape[1])],
                 index=vif_data.columns)
 
-deciduousness_path = r'data/seasonality/time_lag_map_0521.tif'
+deciduousness_path = str(ROOT / 'data/seasonality/time_lag_map_0521.tif')
 
 _geo, _prj, deciduousness = readTif_gdal(deciduousness_path)
 
@@ -194,7 +219,7 @@ data_y = deciduousness_res[~final_mask]
 
 data_x = variable_reshape[~final_mask]
 
-dec_path = r'data/deciduousness/Composite_Data_5km_gf_3y.tif'
+dec_path = str(ROOT / 'data/deciduousness/Composite_Data_5km_gf_3y.tif')
 
 dec_geo, dec_prj, dec_data = readTif_gdal(dec_path)
 dec_data = cv2.resize(dec_data, (raws_y, columns_x))
@@ -230,7 +255,7 @@ def cross_val(sub_model, data_x, data_y, cv=5):
 def rf_score(max_depth, learning_rate, subsample, n_estimators):
 
     xgbr_model = xgb.XGBRegressor(
-        tree_method='hist',
+        tree_method='gpu_hist',
         max_depth=int(max_depth),
         learning_rate=min(learning_rate, 1.0),
         subsample=min(subsample, 1.0),
@@ -246,22 +271,7 @@ def rf_score(max_depth, learning_rate, subsample, n_estimators):
 
     return r_mean
 
-xgb_bo_for = BayesianOptimization(
-    rf_score,
-    {'max_depth': (5, 15),
-     'learning_rate': (0.01, 1.0),
-     'subsample': (0.1, 1.0),
-     'n_estimators': (50, 300)
-     },
-    random_state=100
-)
-
-xgb_bo_for.maximize(init_points=0, n_iter=0)
-
-print(xgb_bo_for.max)
-
-best_params = xgb_bo_for.max['params']
-
+# The manuscript source overwrites its search result with these fixed values.
 best_params = {'learning_rate': 0.18512765385340405, 'max_depth': 12.813679966948698,
                'n_estimators': 147.51467043841544, 'subsample': 0.6025355847978281}
 
@@ -271,7 +281,8 @@ params = {'objective': 'reg:squarederror',
           'max_depth': int(best_params['max_depth']),
           'subsample': best_params['subsample'],
           'n_estimators': int(best_params['n_estimators']),
-          'tree_method': 'hist'}
+          'tree_method': 'gpu_hist',
+          'random_state': 0}
 
 kf = KFold(n_splits=10, shuffle=True, random_state=42)
 
@@ -308,6 +319,8 @@ for train_index, test_index in kf.split(data_x):
 
 print(np.corrcoef(test_y_list, predictions_list)[0, 1] ** 2)
 print(round(np.sqrt(mean_squared_error(test_y_list, predictions_list)), 3))
+cv_squared_pearson_r = float(np.corrcoef(test_y_list, predictions_list)[0, 1] ** 2)
+cv_rmse = float(np.sqrt(mean_squared_error(test_y_list, predictions_list)))
 
 RMSE = round(np.sqrt(mean_squared_error(test_y_list, predictions_list)), 3)
 
@@ -393,7 +406,7 @@ plt.text(0.05, 0.80, f'r^2 = {corr:.2f}',
 plt.tight_layout()
 plt.show()
 
-save_path = r'outputs/figures/FigS7_cross_validation_0521.png'
+save_path = str(FIGURES / 'FigS7_cross_validation_0521.png')
 plt.savefig(save_path, dpi=300, bbox_inches='tight')
 
 model = xgb.XGBRegressor(**params)
@@ -423,16 +436,8 @@ plt.yticks(fontsize=16)
 plt.tight_layout()
 
 st = time.time()
-shap_chunks = []
-shap_chunk_size = 25000
-for chunk_start in range(0, data_x.shape[0], shap_chunk_size):
-    chunk_end = min(chunk_start + shap_chunk_size, data_x.shape[0])
-    chunk = model.get_booster().predict(
-        xgb.DMatrix(data_x[chunk_start:chunk_end]), pred_contribs=True
-    )[:, :-1]
-    shap_chunks.append(chunk)
-    print(f'Calculated SHAP rows {chunk_start}:{chunk_end} / {data_x.shape[0]}')
-shap_values = np.concatenate(shap_chunks, axis=0)
+explainer = shap.TreeExplainer(model)
+shap_values = explainer.shap_values(data_x)
 et = time.time()
 print('Calculating SHAP values costs: ', round((et - st) / 60, 3), 'min')
 
@@ -529,7 +534,7 @@ cbar = fig.colorbar(im, cax=cbar_ax, orientation='horizontal')
 cbar.set_label('Number of samples', fontsize=7)
 cbar.ax.tick_params(labelsize=6)
 
-save_path = r'outputs/figures/FigS9_Partial_dependence_plot_4x3_0521.png'
+save_path = str(FIGURES / 'FigS9_Partial_dependence_plot_4x3_0521.png')
 fig.savefig(save_path, dpi=300, bbox_inches='tight')
 
 width_x, height_y = 650, 786
@@ -616,7 +621,7 @@ ax2.pie(class_importance, labels=['Soil', 'Hydroclimate', 'PAR', 'Herbivory'], p
         textprops={'fontsize': 14, 'color': 'k', 'weight': 'regular'})
 
 plt.tight_layout()
-save_path = r'outputs/figures/Feature_importance_herbivory.png'
+save_path = str(FIGURES / 'Feature_importance_herbivory.png')
 fig.savefig(save_path, dpi=300, bbox_inches='tight')
 
 for i in sorted_idx:
@@ -697,6 +702,7 @@ feature_name = ['SR(W/m$^{2}$)', 'MCWD(mm)', 'MAP(mm/year)', 'Herbivory', 'Soil 
                 'Soil Fertility(cmol(+)/kg)', 'Soil moisture(m$^3$ m$^{-3}$)', 'Soil Sand', ]
 
 feature_ind_list = important_ind[:3]
+sorted_idx = feature_importance.argsort()
 
 fig, axes = plt.subplots(2, 2, figsize=(6, 5.5),dpi=300)
 
@@ -802,7 +808,7 @@ cbar = fig.colorbar(im, cax=cax, shrink=1.2, fraction=0.08, aspect=30, pad=0.05,
 cbar.ax.tick_params(labelsize=7)
 cbar.set_label('Number of samples', fontsize=8)
 
-save_path = r'outputs/figures/Fig4_driver_Vegetation_removal_0818.png'
+save_path = str(FIGURES / 'Fig4_driver_Vegetation_removal_0818.png')
 fig.savefig(save_path, dpi=300, bbox_inches='tight')
 
 width_x, height_y = 650, 786
@@ -828,5 +834,57 @@ drivers_top3_map_sum = np.nansum(drivers_top3_map, axis=2)
 drivers_top3_map_sum[drivers_top3_map_sum == 0] = np.nan
 drivers_top3_map_nor = drivers_top3_map / drivers_top3_map_sum[:, :, np.newaxis]
 
-save_path = r'outputs/drivers/Asynchrony_shap_map_3type_drivers_0818.tif'
+valid = np.isfinite(drivers_top3_map_nor).all(axis=2)
+proportions = np.nanmean(drivers_top3_map_nor[valid], axis=0)
+input_paths = [cls_modis_path, deciduousness_path]
+input_paths.extend(str(Path(variables_dir) / name) for name in variable_lists)
+
+def sha256(path):
+    digest = hashlib.sha256()
+    with Path(path).open('rb') as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+metrics = {
+    'versions': {'python': sys.version, 'xgboost': xgb.__version__,
+                 'shap': shap.__version__, 'numpy': np.__version__,
+                 'opencv': cv2.__version__, 'gdal': gdal.__version__},
+    'model_parameters': params,
+    'feature_order': variable_lists,
+    'group_indices': {'Light': type1, 'Hydroclimate': type2,
+                      'Soil': type3, 'Herbivory': type4},
+    'valid_pixels': int(valid.sum()),
+    'cv_squared_pearson_r': cv_squared_pearson_r,
+    'cv_rmse_months': cv_rmse,
+    'figure3a_class_importance_percent': dict(zip(
+        ['Soil', 'Hydroclimate', 'Light', 'Herbivory'],
+        (class_importance * 100).tolist())),
+    'figure3e_mean_proportion_percent': dict(zip(
+        ['Light', 'Hydroclimate', 'Soil'], (proportions * 100).tolist())),
+    'inputs_sha256': {str(Path(path).relative_to(ROOT)): sha256(path)
+                      for path in input_paths},
+    'checks': {
+        'complete_pixels_match': int(valid.sum()) == 226023,
+        'cv_rounds_to_0_67': round(cv_squared_pearson_r, 2) == 0.67,
+        'figure3a_match': bool(np.allclose(class_importance * 100,
+                                         [30.0, 48.4, 14.4, 7.2], atol=1e-4)),
+        'figure3e_match': bool(np.allclose(np.round(proportions * 100, 1),
+                                         [15.2, 51.6, 33.2], atol=1e-4)),
+    },
+}
+with (OUTPUT / 'figure3_metrics.json').open('w', encoding='utf-8') as stream:
+    json.dump(metrics, stream, indent=2)
+print(json.dumps(metrics, indent=2), flush=True)
+if not all(metrics['checks'].values()):
+    raise RuntimeError('Figure 3 manuscript gates failed; see figure3_metrics.json. '
+                       'The released raster has not been modified.')
+model.save_model(str(OUTPUT / 'figure3_model.ubj'))
+np.savez_compressed(OUTPUT / 'figure3_shap_outputs.npz',
+                    features=data_x, response=data_y, shap_values=shap_values,
+                    cv_response=test_y_list, cv_prediction=predictions_list,
+                    valid_mask=~final_mask, driver_map=drivers_top3_map_nor)
+save_path = str(OUTPUT / 'Asynchrony_shap_map_3type_drivers_0818.tif')
 save_tif(drivers_top3_map_nor, save_path, _geo, _prj, 3)
+plt.close('all')
+print('Figure 3 manuscript gates passed. Wrote:', save_path)

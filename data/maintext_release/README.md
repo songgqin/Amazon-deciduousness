@@ -10,8 +10,7 @@ tracked with Git LFS. These files are the manuscript-facing public inputs and
 are kept separate from the earlier categorized working data under `data/` so
 that existing validated results are not overwritten.
 
-The five main-figure source scripts are in `code/mainfigure_materials/`.
-Because the source scripts contain workstation-specific `J:`, `Z:`, and network
-paths, use `code/reproduce_main_figures.py` for the repository-relative,
+The workstation-specific main-figure source-material bundle is not included.
+Use `code/reproduce_main_figures.py` for the repository-relative,
 non-interactive raster and visual check. It reads this release directory and
 the already generated seasonality/driver inputs under `data/`.
