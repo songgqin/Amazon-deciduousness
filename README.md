@@ -72,4 +72,28 @@ data/validation/            Eddy-flux and ground-validation tables
 
 `code/site_ground_evaluation.py` and `code/site_phenocam_evaluation.py` run site-level validation analyses.
 
+## Main-text Reproduction Release
+
+The manuscript-facing source materials are preserved in `code/mainfigure_materials/`. These are the five scripts supplied from `Materials_for_mainfigure` plus the local public-data Figure 3 source mirror. Their original hard-coded workstation paths and interactive Qt backend are intentionally preserved for provenance; the repository-relative checks below are the runnable entry points.
+
+The corresponding public data release is copied, without renaming, under `data/maintext_release/`. This additive directory contains the 26 files released with the manuscript and is tracked with Git LFS for raster files. `data/maintext_release/README.md` records the source and scope.
+
+For a repository-relative, non-interactive raster check and Figure 2/Figure 3e rendering, run:
+
+```bash
+python code/reproduce_main_figures.py
+```
+
+The generated QA figures are written to `outputs/figures/` and are intentionally ignored by Git. Reference images used for visual comparison are in `reference_figures/`.
+
+The strict main-text check is:
+
+```bash
+python code/reproduce_main_text.py
+```
+
+It uses the local R4_2 Figure 4 calculation in `code/verify_maintext_fig4.py`, including the original 786 x 650 grid, bilinear forest-mask resize, six valid-month threshold, normalized GOSIF-CSIF reference, formulation-balanced EC-LUE/MOD-LUE/TL-EC ensemble, and a hard gate that the original result rounds to 79.9%. It also checks the Figure 3e proportions read from the checked-in ternary driver raster against the Word main-text values. The detailed CSV/JSON QA records are written to `outputs/qa/`, which is ignored by Git.
+
+The existing `code/gpp_evaluate_against_sif.py` remains the broader Figure 4 evaluation and site-validation workflow; it is not used as the strict main-text gate because it also produces additional site-scale outputs.
+
 
