@@ -89,7 +89,7 @@ For a repository-relative, non-interactive raster check and Figure 2/Figure 3e r
 python code/reproduce_main_figures.py
 ```
 
-The generated QA figures are written to `outputs/figures/` and are intentionally ignored by Git. Reference images used for visual comparison are in `reference_figures/`.
+The generated QA figures are written to `outputs/figures/` and are intentionally ignored by Git.
 
 The strict main-text check is:
 

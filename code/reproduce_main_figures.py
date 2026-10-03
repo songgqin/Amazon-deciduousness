@@ -10,8 +10,7 @@ Run from any working directory with the repository Python environment::
     python code/reproduce_main_figures.py
 
 The generated files are written below ``outputs/figures`` and are ignored by
-Git.  The source reference figures are kept separately in ``reference_figures``
-for visual comparison.
+Git.
 """
 
 from __future__ import annotations
