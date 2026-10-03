@@ -3,6 +3,11 @@
 """
 
 # In[] Imports
+import argparse
+import hashlib
+import json
+import sys
+from pathlib import Path
 import os
 import cv2
 import string
@@ -20,6 +25,20 @@ import warnings
 import cartopy.io.shapereader as shpreader
 
 # In[] Workflow
+ROOT = Path(__file__).resolve().parents[1]
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--gpp-dir", type=Path, default=ROOT / "data" / "gpp" / "outputs")
+parser.add_argument("--output-dir", type=Path, default=ROOT / "outputs" / "figures" / "gpp_evaluation")
+parser.add_argument("--strict", action="store_true", help="Require the manuscript's 79.9 percent basin result")
+args = parser.parse_args()
+OUTPUT_DIR = args.output_dir.resolve()
+if OUTPUT_DIR == ROOT / "data" or ROOT / "data" in OUTPUT_DIR.parents:
+    raise ValueError("Evaluation outputs must not overwrite released data/")
+if OUTPUT_DIR.exists():
+    raise FileExistsError("Choose a new --output-dir to preserve earlier evaluation outputs")
+os.chdir(ROOT)
 matplotlib.use("Agg")
 warnings.filterwarnings('ignore')
 
@@ -31,7 +50,8 @@ COLOR_OBS = 'k'
 def readTif_gdal_safe(fileName, nbands=12):
     gdal.PushErrorHandler('CPLQuietErrorHandler')
     dataset = gdal.Open(fileName)
-    if dataset is None: return None, None, None
+    if dataset is None:
+        raise FileNotFoundError(fileName)
     im_width, im_height = dataset.RasterXSize, dataset.RasterYSize
     im_data = dataset.ReadAsArray(0, 0, im_width, im_height)
     if im_data.ndim == 3 and im_data.shape[0] <= nbands:
@@ -66,6 +86,30 @@ def add_shp(ax, shp_path, **kwargs):
     ax.add_geometries(provinces, proj, **kwargs)
     reader.close()
 
+
+def delta_histogram(ax, values, fontsize=9):
+    """Probability histogram and strict-positive fraction, as in the revision."""
+    from matplotlib.patches import Rectangle
+    values = values[np.isfinite(values)]
+    if not values.size:
+        raise ValueError("No valid pixels for Delta-r histogram")
+    bottom = 0.13 if fontsize <= 7 else 0.005
+    ax.add_patch(Rectangle((0.65, bottom - 0.065), 0.39, 0.34, transform=ax.transAxes,
+                           facecolor="white", edgecolor="none", zorder=8, clip_on=False))
+    inset = ax.inset_axes([0.70, bottom, 0.26, 0.235], zorder=10)
+    sns.histplot(data=values, stat="probability", bins=50, color="gray", alpha=0.75,
+                 edgecolor="black", linewidth=0.25, ax=inset)
+    inset.yaxis.tick_right()
+    inset.yaxis.set_label_position("right")
+    inset.set(xlim=(-1, 1), ylim=(0, 0.18))
+    inset.set_ylabel("Proportion", fontsize=fontsize)
+    inset.set_xlabel(r"$\Delta r$", fontsize=fontsize, labelpad=1)
+    inset.axvline(0, color="darkred", linestyle="--", linewidth=1)
+    inset.text(0.97, 0.94, f"> 0: {100 * np.mean(values > 0):.1f}%", transform=inset.transAxes,
+               ha="right", va="top", fontsize=fontsize - 1, color="darkred")
+    inset.tick_params(labelsize=fontsize - 1, length=2)
+    inset.spines[["top", "left"]].set_visible(False)
+
 print(">>> Initializing masks and SIF validation data...")
 raws_y, columns_x = 786, 650
 img_extent = [-79.77, -44.51, -20.52, 8.62]
@@ -96,8 +140,8 @@ sif_ref_nor = np.nanmean(np.stack([normalize_ts(sif1_ts), normalize_ts(sif2_ts)]
 
 print(">>> Loading Exp1 and Exp3 outputs for comparison...")
 
-exp1_dir = r'data/gpp/outputs'
-exp3_dir = r'data/gpp/outputs'
+exp1_dir = str(args.gpp_dir.resolve())
+exp3_dir = exp1_dir
 
 model_pairs = {
     'EC-LUE': (['EC_LUE_EVI_GPP_local.tif', 'EC_LUE_kNDVI_GPP_local.tif', 'EC_LUE_NDVI_GPP_local.tif',
@@ -109,6 +153,12 @@ model_pairs = {
               'TL_EC_LUE_LAI_Dec_Demography_GPP.tif')
 }
 
+required_gpp = [Path(exp1_dir) / f for files, ld_file in model_pairs.values() for f in [*files, ld_file]]
+missing = [str(path) for path in required_gpp if not path.is_file()]
+if missing:
+    raise FileNotFoundError("All three formulations and all conventional inputs are required:\n" + "\n".join(missing))
+OUTPUT_DIR.mkdir(parents=True, exist_ok=False)
+
 delta_r_maps = {}
 formulation_mean_delta_r_list = []
 
@@ -116,8 +166,7 @@ for model_name, (exp1_files, file_exp3) in model_pairs.items():
 
     exp3_path = os.path.join(exp3_dir, file_exp3)
     if not os.path.exists(exp3_path):
-        print(f"Missing Exp3 file: {file_exp3}; skipping this model.")
-        continue
+        raise FileNotFoundError(exp3_path)
 
     geo_info, _, data_exp3 = readTif_gdal_safe(exp3_path)
     data_exp3 = cv2.resize(data_exp3, (raws_y, columns_x))
@@ -128,8 +177,7 @@ for model_name, (exp1_files, file_exp3) in model_pairs.items():
     for f1 in exp1_files:
         f_path = os.path.join(exp1_dir, f1)
         if not os.path.exists(f_path):
-            print(f"Missing file: {f1}; skipping this file.")
-            continue
+            raise FileNotFoundError(f_path)
 
         _, _, data_exp1 = readTif_gdal_safe(f_path)
         data_exp1 = cv2.resize(data_exp1, (raws_y, columns_x))
@@ -160,16 +208,16 @@ for model_name, (exp1_files, file_exp3) in model_pairs.items():
 
         print(f"Finished comparison: {model_name} using {len(specific_delta_r_maps)} specific-model Delta r maps.")
     else:
-        print(f"No valid specific models were available for {model_name}.")
+        raise ValueError(f"No valid specific models were available for {model_name}")
 
 print(">>> Calculating ensemble mean improvement...")
-if formulation_mean_delta_r_list:
+if len(formulation_mean_delta_r_list) == 3:
 
     ensemble_mean_delta_r = np.nanmean(np.stack(formulation_mean_delta_r_list, axis=0), axis=0)
     delta_r_maps['Ensemble Mean'] = ensemble_mean_delta_r
     print("Finished ensemble mean calculation.")
 else:
-    print("Not enough formulation data to calculate the ensemble mean.")
+    raise ValueError("Exactly three formulations are required for the ensemble")
 
 print(">>> Extracting site-scale time series and +/-1 SEM bands...")
 
@@ -179,6 +227,7 @@ eddy_flux_dir = r'data/validation/eddy_flux'
 site_locate_pd = pd.read_excel(site_locate_path)
 
 site_series_data = {}
+site_monthly_rows = []
 r_bench_all, rmse_bench_all = [], []
 r_ens_all, rmse_ens_all = [], []
 EC_pos = []
@@ -241,7 +290,10 @@ for eddy_flux_name in eddy_flux_name_list:
     csv_path = os.path.join(eddy_flux_dir, eddy_flux_name)
     pd_eddy = pd.read_csv(csv_path, usecols=['DOY', 'GEP', 'Month'])
     pd_eddy['GEP'] = pd.to_numeric(pd_eddy['GEP'], errors='coerce')
-    site_obs = pd_eddy.groupby('Month')['GEP'].mean().to_numpy()
+    pd_eddy['Month'] = pd.to_numeric(pd_eddy['Month'], errors='raise')
+    if not pd_eddy['Month'].isin(range(1, 13)).all():
+        raise ValueError(f"Invalid month labels at {site_name}")
+    site_obs = pd_eddy.groupby('Month')['GEP'].mean().reindex(range(1, 13)).to_numpy()
 
     v_mask = ~np.isnan(site_obs) & ~np.isnan(site_exp3_mean) & ~np.isnan(site_exp1_mean)
 
@@ -257,15 +309,44 @@ for eddy_flux_name in eddy_flux_name_list:
         r_ens_all.append(r_exp1)
         rmse_ens_all.append(rmse_exp1)
     else:
-        print(f"Not enough valid months at site {site_name}; R and RMSE were not calculated.")
+        raise ValueError(f"Not enough common valid months at site {site_name} for R and RMSE")
 
     site_series_data[site_name] = {
         'obs': site_obs,
         'exp3_m': site_exp3_mean, 'exp3_sem': site_exp3_sem,
         'exp1_m': site_exp1_mean, 'exp1_sem': site_exp1_sem
     }
+    for month in range(12):
+        record = dict(site=site_name, month=month + 1, observed_gpp=float(site_obs[month]),
+                      ld_mean=float(site_exp3_mean[month]), ld_sem=float(site_exp3_sem[month]),
+                      conventional_mean=float(site_exp1_mean[month]), conventional_sem=float(site_exp1_sem[month]),
+                      n_formulations=3, sem_ddof=1)
+        for index, formulation in enumerate(raw_exp3_labels):
+            record[f"{formulation}_ld"] = float(site_exp3_models[index, month])
+            record[f"{formulation}_conventional"] = float(site_exp1_models[index, month])
+        site_monthly_rows.append(record)
 
 print("Finished extracting all site time series and error bands.")
+pd.DataFrame(site_monthly_rows).to_csv(OUTPUT_DIR / "figure4_site_monthly.csv", index=False)
+pd.DataFrame(dict(site=list(site_series_data), ld_r=r_bench_all, conventional_r=r_ens_all,
+                  ld_rmse=rmse_bench_all, conventional_rmse=rmse_ens_all)).to_csv(
+                      OUTPUT_DIR / "figure4_site_metrics.csv", index=False)
+distribution = {}
+for name, values in delta_r_maps.items():
+    values = values[np.isfinite(values)]
+    q1, median, q3 = np.percentile(values, [25, 50, 75])
+    distribution[name] = dict(valid_pixels=int(values.size), improved_pixels=int(np.sum(values > 0)),
+                              improved_percent=float(100 * np.mean(values > 0)), q1=float(q1),
+                              median=float(median), q3=float(q3))
+metadata = dict(distributions=distribution, site_sem="SD(ddof=1) across three formulations / sqrt(3)",
+                site_window_pixels=[2, 2], minimum_valid_months=6,
+                input_sha256={str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in required_gpp})
+with (OUTPUT_DIR / "figure4_metrics.json").open("w", encoding="utf-8") as stream:
+    json.dump(metadata, stream, indent=2)
+np.savez_compressed(OUTPUT_DIR / "figure4_delta_r_maps.npz", **delta_r_maps)
+print(json.dumps(distribution, indent=2))
+if args.strict and round(distribution["Ensemble Mean"]["improved_percent"], 1) != 79.9:
+    raise RuntimeError("Figure 4 does not reproduce the manuscript's 79.9 percent result; see figure4_metrics.json")
 
 cmap_blue = plt.cm.Blues_r(np.linspace(0.10, 0.80, 5))
 cmap_red = plt.cm.Reds(np.linspace(0.10, 0.80, 5))
@@ -320,25 +401,7 @@ cb_main.set_label(r'$\Delta r$', fontsize=16, fontweight='bold')
 cb_main.ax.tick_params(direction='in', length=5, width=1.2, colors='k')
 cb_main.outline.set_linewidth(1.2)
 
-valid_data = map_data_ens[~np.isnan(map_data_ens)]
-if len(valid_data) > 0:
-    improved_cnt = np.sum(valid_data >= 0)
-    degraded_cnt = np.sum(valid_data < 0)
-    sizes = [improved_cnt, degraded_cnt]
-    pie_colors_sig = ['#cb181d', '#2166ac']
-
-    ax_ins = ax_map.inset_axes([0.70, 0.01, 0.34, 0.34], zorder=10)
-    wedges, texts, autotexts = ax_ins.pie(
-        sizes, colors=pie_colors_sig, autopct='%1.1f%%', startangle=90, pctdistance=0.65,
-        wedgeprops=dict(edgecolor=None, linewidth=0.5, alpha=0.9, width=0.65)
-    )
-
-    for j, autotext in enumerate(autotexts):
-        autotext.set_fontsize(14)
-        autotext.set_fontweight('bold')
-        autotext.set_color('white')
-        if sizes[j] / sum(sizes) < 0.05:
-            autotext.set_text('')
+delta_histogram(ax_map, map_data_ens, fontsize=11)
 
 line_coords = [[0.57, 0.71, 0.18, 0.22], [0.80, 0.71, 0.18, 0.22], [0.57, 0.395, 0.18, 0.22], [0.80, 0.395, 0.18, 0.22]]
 m_list = np.arange(1, 13)
@@ -412,8 +475,9 @@ fig_main.legend(handles=[b1, b2], labels=['LD-LUE', 'Conv-LUE'],
 
 plt.show()
 
-save_path = r'outputs/figures/FigS_LD_LUE_Conv_LUE_Comparison.png'
+save_path = OUTPUT_DIR / 'Figure4_LD_LUE_Conv_LUE_Comparison.png'
 fig_main.savefig(save_path, dpi=300, bbox_inches='tight')
+plt.close(fig_main)
 
 print(">>> Generating the supplementary evaluation matrix...")
 rows, cols = 1, 3
@@ -427,8 +491,6 @@ plot_order = ['EC-LUE', 'TL-EC', 'MODIS-LUE']
 plot_tile = ['EC-LUE', 'TL-EC-LUE', 'MODIS-LUE']
 
 panel_letters = ['a', 'b', 'c']
-
-pie_colors = ['#cb181d', '#2166ac', '#e0e0e0']
 
 for i, model_name in enumerate(plot_order):
     ax = fig_sup.add_subplot(gs[0, i], projection=ccrs.PlateCarree())
@@ -458,35 +520,7 @@ for i, model_name in enumerate(plot_order):
     ax.text(-0.1, 1.08, panel_letters[i], transform=ax.transAxes,
             fontsize=14, fontweight='bold', va='bottom')
 
-    valid_data = map_data[~np.isnan(map_data)]
-    if len(valid_data) > 0:
-        improved_cnt = np.sum(valid_data >= 0)
-        degraded_cnt = np.sum(valid_data < 0)
-
-        sizes = [improved_cnt, degraded_cnt]
-        pie_colors_sig = ['#cb181d', '#2166ac']
-
-        ax_ins = ax.inset_axes([0.72, 0.01, 0.34, 0.34], zorder=10)
-
-        wedges, texts, autotexts = ax_ins.pie(
-            sizes,
-            colors=pie_colors_sig,
-            autopct='%1.1f%%',
-            startangle=90,
-
-            pctdistance=0.65,
-
-            wedgeprops=dict(edgecolor=None, linewidth=0.5, alpha=0.9, width=0.65)
-        )
-
-        for j, autotext in enumerate(autotexts):
-
-            autotext.set_fontsize(10)
-            autotext.set_fontweight('bold')
-            autotext.set_color('k')
-
-            if sizes[j] / sum(sizes) < 0.05:
-                autotext.set_text('')
+    delta_histogram(ax, map_data, fontsize=7)
 
 fig_sup.subplots_adjust(left=0.06, right=0.96, top=0.88, bottom=0.22)
 
@@ -502,5 +536,6 @@ cb_main.outline.set_linewidth(0.8)
 plt.show()
 print("\n>>> Finished drawing all figures.")
 
-save_path_sup = r'outputs/figures/FigS_Three_Framework_LD_LUE_Conv_LUE_Comparison_Supplement.png'
+save_path_sup = OUTPUT_DIR / 'Extended_Data_Figure7_LUE_Formulations.png'
 fig_sup.savefig(save_path_sup, dpi=300, bbox_inches='tight')
+plt.close(fig_sup)

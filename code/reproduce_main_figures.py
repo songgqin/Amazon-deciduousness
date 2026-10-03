@@ -93,7 +93,7 @@ def add_boundary(ax) -> None:
         return
 
 
-def figure2_site_data() -> pd.DataFrame:
+def figure2_site_data(lag_path: Path | None = None) -> pd.DataFrame:
     """Match the local revision: native 3x3 patches and SD across three years.
 
     Means use the supplied three-year mean rasters. Error bars use the SD
@@ -108,7 +108,7 @@ def figure2_site_data() -> pd.DataFrame:
     evi, evi_geo = read_raster(DATA / "seasonality" / "BRDF_EVI_3years_mean.tif", dtype=None)
     rain, _ = read_raster(DATA / "drivers" / "inputs" / "hydroclimate_precipitation_ERA.tif")
     rain = cv2.resize(rain, (786, 650)) * 1000.0
-    lag, _ = read_raster(DATA / "seasonality" / "time_lag_map.tif")
+    lag, _ = read_raster(lag_path or DATA / "seasonality" / "time_lag_map.tif")
     annual = {"deciduousness": [], "evi": []}
     for year in years:
         d, geo = read_raster(DATA / "deciduousness" / f"Composite_Data_{year}_5km_gf.tif")
@@ -155,14 +155,14 @@ def figure2_site_data() -> pd.DataFrame:
     return pd.DataFrame.from_records(records)
 
 
-def figure2(output_dir: Path | None = None) -> Path:
+def figure2(output_dir: Path | None = None, lag_path: Path | None = None) -> Path:
     """Render the Figure 2 map and ATTO/RJA seasonal-cycle composite."""
 
     import cartopy.crs as ccrs
     from cartopy.mpl.ticker import LatitudeFormatter, LongitudeFormatter
 
     dec, dec_geo = read_raster(RELEASE / "Deciduousness_Seasonality_Amazon.tif")
-    lag, _ = read_raster(DATA / "seasonality" / "time_lag_map.tif")
+    lag, _ = read_raster(lag_path or DATA / "seasonality" / "time_lag_map.tif")
     mask, _ = read_raster(RELEASE / "MCD12Q1_Amazon.tif")
 
     # The public release contains the native 785-column products.  The
@@ -179,7 +179,7 @@ def figure2(output_dir: Path | None = None) -> Path:
 
     output_dir = FIGURES if output_dir is None else Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    sites = figure2_site_data()
+    sites = figure2_site_data(lag_path)
     sites.to_csv(output_dir / "Main_Figure2_site_monthly.csv", index=False)
     locations = pd.read_csv(DATA / "phenocam" / "ATTO_RJA_Location.csv").set_index("Site").loc[["ATTO", "RJA"]]
     site_names = ["ATTO", "RJA"]
@@ -246,7 +246,7 @@ def figure2(output_dir: Path | None = None) -> Path:
     return out
 
 
-def figure3_map(strict: bool = False, output_dir: Path | None = None) -> Path:
+def figure3_map(strict: bool = False, output_dir: Path | None = None, driver_path: Path | None = None) -> Path:
     """Render the released three-driver SHAP composition used by Figure 3e."""
 
     import cartopy.crs as ccrs
@@ -254,14 +254,15 @@ def figure3_map(strict: bool = False, output_dir: Path | None = None) -> Path:
 
     output_dir = FIGURES if output_dir is None else Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    drivers, geo = read_raster(DATA / "drivers" / "asynchrony_driver_map_3type.tif")
+    driver_path = driver_path or DATA / "drivers" / "asynchrony_driver_map_3type.tif"
+    drivers, geo = read_raster(driver_path)
     rgb = np.array([[208, 28, 139], [65, 182, 196], [253, 184, 99]], dtype=np.float32) / 255.0
     image = np.nansum(drivers[..., None] * rgb[None, None, :, :], axis=2)
     image[np.all(np.isnan(drivers), axis=2)] = 1.0
     valid = np.isfinite(drivers).all(axis=2) & (np.nansum(drivers, axis=2) > 0)
     proportions = np.nanmean(drivers[valid], axis=0)
     metrics = {
-        "source_raster": str((DATA / "drivers" / "asynchrony_driver_map_3type.tif").relative_to(ROOT)),
+        "source_raster": str(driver_path.relative_to(ROOT) if driver_path.is_relative_to(ROOT) else driver_path),
         "band_order": ["Light", "Hydroclimate", "Soil"],
         "valid_pixels": int(valid.sum()),
         "proportions": {name: float(value) for name, value in zip(["Light", "Hydroclimate", "Soil"], proportions)},

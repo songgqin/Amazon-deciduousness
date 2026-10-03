@@ -3,6 +3,8 @@
 """
 
 # In[] Imports
+import argparse
+from pathlib import Path
 import copy
 import numpy as np
 import cv2
@@ -21,6 +23,17 @@ from skimage import morphology
 import seaborn as sns
 
 # In[] Workflow
+ROOT = Path(__file__).resolve().parents[1]
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--output-dir", type=Path, default=ROOT / "outputs" / "seasonality")
+parser.add_argument("--forest-mask", type=Path, default=ROOT / "data" / "forest_mask" / "MCD12Q1_Amazon.tif",
+                    help="The released coarse mask reproduces the manuscript lag raster; native/ is a different support.")
+args = parser.parse_args()
+OUTPUT_DIR = args.output_dir.resolve()
+if OUTPUT_DIR == ROOT / "data" or ROOT / "data" in OUTPUT_DIR.parents:
+    raise ValueError("Generated outputs must not overwrite released data/ inputs")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
 matplotlib.use("Agg")
 matplotlib.rcParams['figure.dpi'] = 200
 import matplotlib.colors as mcolors
@@ -43,6 +56,8 @@ def readTif_gdal(fileName, nbands=36):
 
 def save_tif(grouthTif, savePath, Geo_, Projection_, nbands):
     gdal.UseExceptions()
+    if Path(savePath).exists():
+        raise FileExistsError(f"Output exists; choose a new --output-dir: {savePath}")
     driver = gdal.GetDriverByName("GTiff")
     driver.Register()
     datatype = gdal.GDT_Float32
@@ -64,7 +79,7 @@ def save_tif(grouthTif, savePath, Geo_, Projection_, nbands):
     del outputData
 
 raws_y, columns_x = 786, 650
-cls_modis_path = r'data/forest_mask/MCD12Q1_Amazon.tif'
+cls_modis_path = str(args.forest_mask)
 
 _, _, cls_md = readTif_gdal(cls_modis_path)
 cls_md_forest = copy.deepcopy(cls_md)
@@ -193,10 +208,9 @@ time_lag_map2[time_lag_map2 > 6] = 12 - time_lag_map2[time_lag_map2 > 6]
 
 cor_np_map[~forest_mask] = np.nan
 
-os.makedirs(r'outputs/seasonality', exist_ok=True)
-save_path = r'outputs/seasonality/time_lag_map.tif'
+save_path = str(OUTPUT_DIR / 'time_lag_map.tif')
 
 save_tif(time_lag_map2, save_path, _geo, _prj, 1)
 
-correlation_path = r'outputs/seasonality/deciduousness_evi_correlation.tif'
+correlation_path = str(OUTPUT_DIR / 'deciduousness_evi_correlation.tif')
 save_tif(cor_np_map, correlation_path, _geo, _prj, 1)

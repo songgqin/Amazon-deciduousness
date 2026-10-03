@@ -3,6 +3,9 @@
 """
 
 # In[] Imports
+import argparse
+import sys
+from pathlib import Path
 import os
 import re
 import copy
@@ -16,6 +19,17 @@ from osgeo import gdal
 from sg_smooth import sgfilter_line
 
 # In[] Workflow
+ROOT = Path(__file__).resolve().parents[1]
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--output-dir", type=Path, default=ROOT / "outputs" / "gpp")
+args = parser.parse_args()
+OUTPUT_DIR = args.output_dir.resolve()
+if OUTPUT_DIR == ROOT / "data" or ROOT / "data" in OUTPUT_DIR.parents:
+    raise ValueError("Generated outputs must not overwrite released data/ inputs")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
 matplotlib.use("Agg")
 matplotlib.rcParams['figure.dpi'] = 150
 
@@ -44,6 +58,8 @@ def readTif_gdal(fileName, nbands=36):
 
 def save_tif(grouthTif, savePath, Geo_, Projection_, nbands):
     gdal.UseExceptions()
+    if Path(savePath).exists():
+        raise FileExistsError(f"Output exists; choose a new --output-dir: {savePath}")
     os.makedirs(os.path.dirname(savePath), exist_ok=True)
 
     driver = gdal.GetDriverByName("GTiff")
@@ -158,11 +174,11 @@ VPD_path = r'data/climate/VPD_Amazon.tif'
 LAI_path = r'data/gpp/inputs/Amazon_MOD15_LAI.tif'
 
 dec_path = r'data/deciduousness/Composite_Data_5km_gf_3y.tif'
-leaf_age_path = r'data/leaf_age/Leaf_Age_ln_Dec_Litterfall_LAI_0414v2.tif'
+leaf_age_path = r'data/leaf_age/Leaf_Age_ln_Dec_Litterfall_LAI.tif'
 
 param_summary_path = r'data/gpp/parameters/EC_LUE_Models_Parameters_Optimization_Summary.csv'
 
-cls_modis_path = r'data/forest_mask/MCD12Q1_Amazon.tif'
+cls_modis_path = r'data/forest_mask/native/MCD12Q1_Amazon.tif'
 
 print(">>> Reading forest mask...")
 
@@ -430,42 +446,42 @@ ec_lue_gpp_configs = [
         'input_type': 'VI',
         'vi_name': 'EVI',
         'input_data': EVI,
-        'save_path': r'data/gpp/outputs/EC_LUE_EVI_GPP_local.tif'
+        'save_path': str(OUTPUT_DIR / 'EC_LUE_EVI_GPP_local.tif')
     },
     {
         'output_name': 'EC_LUE_kNDVI',
         'input_type': 'VI',
         'vi_name': 'kNDVI',
         'input_data': kNDVI,
-        'save_path': r'data/gpp/outputs/EC_LUE_kNDVI_GPP_local.tif'
+        'save_path': str(OUTPUT_DIR / 'EC_LUE_kNDVI_GPP_local.tif')
     },
     {
         'output_name': 'EC_LUE_NDVI',
         'input_type': 'VI',
         'vi_name': 'NDVI',
         'input_data': NDVI,
-        'save_path': r'data/gpp/outputs/EC_LUE_NDVI_GPP_local.tif'
+        'save_path': str(OUTPUT_DIR / 'EC_LUE_NDVI_GPP_local.tif')
     },
     {
         'output_name': 'EC_LUE_MOD_LAI',
         'input_type': 'MOD_LAI',
         'vi_name': None,
         'input_data': MODIS_LAI,
-        'save_path': r'data/gpp/outputs/EC_LUE_MODIS_LAI_GPP_local.tif'
+        'save_path': str(OUTPUT_DIR / 'EC_LUE_MODIS_LAI_GPP_local.tif')
     },
     {
         'output_name': 'EC_LUE_Dec_LAI',
         'input_type': 'Dec_LAI',
         'vi_name': None,
         'input_data': dec_data_nor,
-        'save_path': r'data/gpp/outputs/EC_LUE_LAI_Dec_GPP.tif'
+        'save_path': str(OUTPUT_DIR / 'EC_LUE_LAI_Dec_GPP.tif')
     },
     {
         'output_name': 'EC_LUE_LD_Age',
         'input_type': 'LD_Age',
         'vi_name': None,
         'input_data': dec_data_nor,
-        'save_path': r'data/gpp/outputs/EC_LUE_LAI_Dec_Demography_GPP.tif'
+        'save_path': str(OUTPUT_DIR / 'EC_LUE_LAI_Dec_Demography_GPP.tif')
     }
 ]
 

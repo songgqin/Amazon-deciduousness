@@ -91,6 +91,12 @@ data/validation/            Eddy-flux and ground-validation tables
 
 `code/gpp_ec_lue_experiments.py`, `code/gpp_mod_lue_experiments.py`, and `code/gpp_two_leaf_ec_lue_experiments.py` generate GPP experiments under alternative LUE formulations.
 
+These generators write to `outputs/gpp/` by default, never to released
+`data/gpp/outputs/`. Use `--output-dir` for a new run. Existing result files
+are not overwritten. The EC-LUE generator uses the original native forest
+mask; the Figure 3 and Figure 4 evaluation masks remain unchanged. See
+[forest-mask provenance](data/forest_mask/README.md).
+
 `code/gpp_evaluate_against_sif.py` evaluates GPP experiment outputs against SIF and eddy-flux benchmarks.
 
 `code/site_ground_evaluation.py` and `code/site_phenocam_evaluation.py` run site-level validation analyses.
@@ -127,19 +133,54 @@ and zero for EVI means/SDs, precipitation and lag statistics. See
 [the input notes](data/deciduousness/README.md) for the distinct mean products.
 
 These checks do not establish full publication reproducibility. Figure 1 is a
-conceptual illustration. Figure 2 map-generation parity, fresh GPP simulation
-for Figure 4, complete Extended Data/Supplementary coverage, dataset licensing,
-and clean-environment validation remain under audit. The commands below check
-released products; they do not regenerate the entire analysis from raw data.
+conceptual illustration. Complete Extended Data/Supplementary coverage,
+upstream calibration/unmixing, dataset licensing and clean-environment
+validation remain under audit. None of the commands below regenerates the
+entire analysis from raw satellite and field observations.
 
-The strict main-text check is:
+To render and check the released products without refitting models:
 
 ```bash
-python code/reproduce_main_text.py
+python code/reproduce_main_text.py --output-dir outputs/saved_product_check
 ```
 
-It uses the local R4_2 Figure 4 calculation in `code/verify_maintext_fig4.py`, including the original 786 x 650 grid, bilinear forest-mask resize, six valid-month threshold, normalized GOSIF-CSIF reference, formulation-balanced EC-LUE/MOD-LUE/TL-EC ensemble, and a hard gate that the original result rounds to 79.9%. It also checks the Figure 3e proportions read from the checked-in ternary driver raster against the Word main-text values. The detailed CSV/JSON QA records are written to `outputs/qa/`, which is ignored by Git.
+To regenerate the lag map, refit Figure 3, generate all 12 GPP experiment
+rasters, and then render/evaluate the newly computed results:
 
-The existing `code/gpp_evaluate_against_sif.py` remains the broader Figure 4 evaluation and site-validation workflow; it is not used as the strict main-text gate because it also produces additional site-scale outputs.
+```bash
+python code/reproduce_main_text.py --regenerate --output-dir outputs/main_figure_run
+```
+
+Choose a new output directory for each run. `--regenerate` requires the
+validated XGBoost/GPU environment. It starts from the supplied processed
+rasters, calibrated parameter tables and leaf-age inputs; it does not rerun
+their upstream calibration or satellite unmixing. Raster values, missing-value
+support and georeferencing are compared against released results. Failures
+return a nonzero exit status and are recorded in `reproduction_report.json`.
+
+Figure 4 uses the original 786 x 650 grid, bilinear forest-mask resize,
+six-valid-month thresholds, normalized GOSIF-CSIF reference and balanced
+EC-LUE/MOD-LUE/TL-EC ensemble. The acceptance check requires the strict-positive
+pixel proportion to round to 79.9%. Histograms replace obsolete pie insets;
+zero changes are not counted as improvements. Site uncertainty is SD with
+`ddof=1` across three formulations divided by sqrt(3), not across the six
+individual conventional inputs. Per-formulation monthly values, means, SEM,
+r/RMSE and basin distribution metrics are exported beside the figures.
+
+Independent validation of the regenerated GPP found all 12 arrays and their
+georeferencing identical to the released products. Re-executing the original
+local Figure 4 calculation on its original inputs gave identical three-model
+and ensemble Delta-r arrays. The 48 site-month observations, means and SEM
+matched within CSV floating-point round-trip precision. The ensemble result
+was 175,104 improved pixels out of 219,281 (79.8537%, reported as 79.9%).
+
+For Figure 4 alone, selecting a newly generated GPP directory explicitly:
+
+```bash
+python code/gpp_evaluate_against_sif.py --gpp-dir outputs/gpp --output-dir outputs/figure4_run --strict
+```
+
+`code/verify_maintext_fig4.py` remains an independent check of the saved
+Figure 4 products. Its output alone is not evidence of GPP regeneration.
 
 

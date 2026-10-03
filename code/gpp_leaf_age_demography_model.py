@@ -311,7 +311,7 @@ if __name__ == '__main__':
     )
 
     save_tif(data_final.astype(np.float32),
-             os.path.join(save_dir, 'Leaf_Age_ln_Dec_Litterfall_LAI_0414v2.tif'),
+             os.path.join(save_dir, 'Leaf_Age_ln_Dec_Litterfall_LAI.tif'),
              _geo, _prj, 36)
 
     print(f'Total time: {time.time() - start_time:.2f}s')

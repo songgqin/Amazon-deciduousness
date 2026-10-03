@@ -3,6 +3,9 @@
 """
 
 # In[] Imports
+import argparse
+import sys
+from pathlib import Path
 import copy
 import re
 import os
@@ -13,6 +16,17 @@ from osgeo import gdal
 import matplotlib
 
 # In[] Workflow
+ROOT = Path(__file__).resolve().parents[1]
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--output-dir", type=Path, default=ROOT / "outputs" / "gpp")
+args = parser.parse_args()
+OUTPUT_DIR = args.output_dir.resolve()
+if OUTPUT_DIR == ROOT / "data" or ROOT / "data" in OUTPUT_DIR.parents:
+    raise ValueError("Generated outputs must not overwrite released data/ inputs")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
 matplotlib.use("Agg")
 matplotlib.rcParams['figure.dpi'] = 150
 
@@ -35,6 +49,8 @@ def readTif_gdal(fileName, nbands=36):
 
 def save_tif(array, savePath, Geo_, Projection_, nbands):
     gdal.UseExceptions()
+    if Path(savePath).exists():
+        raise FileExistsError(f"Output exists; choose a new --output-dir: {savePath}")
 
     os.makedirs(os.path.dirname(savePath), exist_ok=True)
 
@@ -72,15 +88,15 @@ Par_path = r'data/climate/ERA5_PAR_total_MJ_2019_2021_Avg_12bands.tif'
 
 VPD_path = r'data/climate/VPD_Amazon.tif'
 LAI_path = r'data/gpp/inputs/Amazon_MOD15_LAI.tif'
-leaf_age_path = r'data/leaf_age/Leaf_Age_ln_Dec_Litterfall_LAI_0414v2.tif'
+leaf_age_path = r'data/leaf_age/Leaf_Age_ln_Dec_Litterfall_LAI.tif'
 
 dec_path = r'data/deciduousness/Composite_Data_5km_gf_3y.tif'
 
 param_summary_path = r'data/gpp/parameters/MOD_LUE_Models_Parameters_Opt_Summary.csv'
 
-out_mod_lai_path = r'data/gpp/outputs/MOD_LUE_GPP_local.tif'
-out_dec_lai_path = r'data/gpp/outputs/MOD_LUE_LAI_Dec_GPP.tif'
-out_ld_age_path = r'data/gpp/outputs/MOD_LUE_LAI_Dec_Demography_GPP.tif'
+out_mod_lai_path = str(OUTPUT_DIR / 'MOD_LUE_GPP_local.tif')
+out_dec_lai_path = str(OUTPUT_DIR / 'MOD_LUE_LAI_Dec_GPP.tif')
+out_ld_age_path = str(OUTPUT_DIR / 'MOD_LUE_LAI_Dec_Demography_GPP.tif')
 
 dec_geo, dec_prj, dec_data = readTif_gdal(dec_path)
 dec_data = resize_to_target(dec_data, raws_y, columns_x)
