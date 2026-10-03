@@ -163,7 +163,7 @@ for year in [2019, 2020, 2021]:
     dec_years_data.append(d/1000.0)
 dec_stack = np.stack(dec_years_data, axis=0)
 
-dec_mean_path = r'data/deciduousness/Composite_Data_5km_gf_3y.tif'
+dec_mean_path = r'data/deciduousness/Figure2_Deciduousness_Seasonality.tif'
 _geo, _prj, dec_mean_basin = readTif_gdal(dec_mean_path)
 
 dec_mean_basin = dec_mean_basin.astype(np.float32)
@@ -359,7 +359,7 @@ fig = plt.figure(dpi=300)
 left, bottom, width, height = 0, 0.1, 0.96, 0.84
 
 proj = ccrs.PlateCarree()
-ax = fig.add_subplot([left, bottom, width, height], projection=proj)
+ax = fig.add_axes([left, bottom, width, height], projection=proj)
 
 ax.add_feature(cfeature.LAND, facecolor='white', zorder=1)
 ax.add_feature(cfeature.OCEAN, zorder=2)
@@ -415,7 +415,7 @@ fig = plt.figure(dpi=300)
 left, bottom, width, height = 0, 0.1, 0.96, 0.84
 
 proj = ccrs.PlateCarree()
-ax = fig.add_subplot([left, bottom, width, height], projection=proj)
+ax = fig.add_axes([left, bottom, width, height], projection=proj)
 
 ax.add_feature(cfeature.LAND, facecolor='white', zorder=1)
 ax.add_feature(cfeature.OCEAN, zorder=2)

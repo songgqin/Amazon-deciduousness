@@ -15,7 +15,7 @@ Git.
 
 from __future__ import annotations
 
-import os
+import argparse
 import sys
 import json
 from pathlib import Path
@@ -40,14 +40,12 @@ DATA = ROOT / "data"
 RELEASE = DATA / "maintext_release"
 FIGURES = ROOT / "outputs" / "figures"
 
-FIGURES.mkdir(parents=True, exist_ok=True)
-
 # Values read from the Word manuscript's Nature-revision Figure 3 panel e.
 # The order follows the ternary raster bands: Light, Hydroclimate, Soil.
 FIGURE3_TARGET_PROPORTIONS = np.array([0.152, 0.516, 0.332], dtype=np.float32)
 
 
-def read_raster(path: Path) -> tuple[np.ndarray, tuple[float, ...]]:
+def read_raster(path: Path, dtype=np.float32) -> tuple[np.ndarray, tuple[float, ...]]:
     """Read a GDAL raster with bands last and convert common nodata values."""
 
     dataset = gdal.Open(str(path))
@@ -56,7 +54,10 @@ def read_raster(path: Path) -> tuple[np.ndarray, tuple[float, ...]]:
     array = dataset.ReadAsArray()
     if array.ndim == 3:
         array = np.moveaxis(array, 0, -1)
-    array = array.astype(np.float32, copy=False)
+    if dtype is not None:
+        array = array.astype(dtype, copy=False)
+    elif not np.issubdtype(array.dtype, np.floating):
+        array = array.astype(np.float32)
     nodata = dataset.GetRasterBand(1).GetNoDataValue()
     if nodata is not None:
         array = array.copy()
@@ -92,15 +93,75 @@ def add_boundary(ax) -> None:
         return
 
 
-def figure2() -> Path:
+def figure2_site_data() -> pd.DataFrame:
+    """Match the local revision: native 3x3 patches and SD across three years.
+
+    Means use the supplied three-year mean rasters. Error bars use the SD
+    (ddof=0) of each year's spatial mean, not the spatial SD of the mean raster.
+    EVI and deciduousness are located on their respective native grids.
+    """
+    years = (2019, 2020, 2021)
+    locations = pd.read_csv(DATA / "phenocam" / "ATTO_RJA_Location.csv").set_index("Site")
+    dec, dec_geo = read_raster(DATA / "deciduousness" / "Figure2_Deciduousness_Seasonality.tif")
+    dec[dec > 1000] = np.nan
+    dec /= 1000.0
+    evi, evi_geo = read_raster(DATA / "seasonality" / "BRDF_EVI_3years_mean.tif", dtype=None)
+    rain, _ = read_raster(DATA / "drivers" / "inputs" / "hydroclimate_precipitation_ERA.tif")
+    rain = cv2.resize(rain, (786, 650)) * 1000.0
+    lag, _ = read_raster(DATA / "seasonality" / "time_lag_map.tif")
+    annual = {"deciduousness": [], "evi": []}
+    for year in years:
+        d, geo = read_raster(DATA / "deciduousness" / f"Composite_Data_{year}_5km_gf.tif")
+        if d.shape != dec.shape or not np.allclose(geo, dec_geo, rtol=0, atol=1e-8):
+            raise ValueError(f"Deciduousness grid differs in {year}")
+        d[d > 1000] = np.nan
+        annual["deciduousness"].append(d / 1000.0)
+        e, geo = read_raster(DATA / "seasonality" / f"BRDF_EVI_{year}.tif", dtype=None)
+        if e.shape != evi.shape or not np.allclose(geo, evi_geo, rtol=0, atol=1e-8):
+            raise ValueError(f"EVI grid differs in {year}")
+        annual["evi"].append(e)
+
+    def patch(array, geo, lat, lon):
+        row, col = int((lat - geo[3]) / geo[5]), int((lon - geo[0]) / geo[1])
+        if row < 1 or col < 1 or row + 1 >= array.shape[0] or col + 1 >= array.shape[1]:
+            raise ValueError("Site does not have a complete 3x3 raster neighborhood")
+        return array[row - 1:row + 2, col - 1:col + 2]
+
+    annual = {name: np.stack(values, axis=0) for name, values in annual.items()}
+    records = []
+    for site in ("ATTO", "RJA"):
+        lat, lon = locations.loc[site, ["Lat", "Lon"]].astype(float)
+        d = np.nanmean(patch(dec, dec_geo, lat, lon), axis=(0, 1))
+        e = np.nanmean(patch(evi, evi_geo, lat, lon), axis=(0, 1))
+        drow, dcol = int((lat - dec_geo[3]) / dec_geo[5]), int((lon - dec_geo[0]) / dec_geo[1])
+        erow, ecol = int((lat - evi_geo[3]) / evi_geo[5]), int((lon - evi_geo[0]) / evi_geo[1])
+        dy = np.nanmean(annual["deciduousness"][:, drow - 1:drow + 2, dcol - 1:dcol + 2], axis=(1, 2))
+        ey = np.nanmean(annual["evi"][:, erow - 1:erow + 2, ecol - 1:ecol + 2], axis=(1, 2))
+        p = np.nanmean(patch(rain, dec_geo, lat, lon), axis=(0, 1))
+        l = patch(lag, dec_geo, lat, lon)
+        ds, es = np.nanstd(dy, axis=0, ddof=0), np.nanstd(ey, axis=0, ddof=0)
+        if not all(np.isfinite(a).all() for a in (d, e, dy, ey, p)):
+            raise ValueError(f"Incomplete monthly support at {site}")
+        for month in range(12):
+            record = dict(site=site, month=month + 1, deciduousness_mean=float(d[month]),
+                          deciduousness_interannual_sd=float(ds[month]), evi_mean=float(e[month]),
+                          evi_interannual_sd=float(es[month]), precipitation_mm=float(p[month]),
+                          dry_month=bool(p[month] < 100), lag_mean_month=float(np.nanmean(l)),
+                          lag_spatial_sd_month=float(np.nanstd(l)), n_years=3, sd_ddof=0)
+            for index, year in enumerate(years):
+                record[f"deciduousness_{year}"] = float(dy[index, month])
+                record[f"evi_{year}"] = float(ey[index, month])
+            records.append(record)
+    return pd.DataFrame.from_records(records)
+
+
+def figure2(output_dir: Path | None = None) -> Path:
     """Render the Figure 2 map and ATTO/RJA seasonal-cycle composite."""
 
     import cartopy.crs as ccrs
     from cartopy.mpl.ticker import LatitudeFormatter, LongitudeFormatter
 
     dec, dec_geo = read_raster(RELEASE / "Deciduousness_Seasonality_Amazon.tif")
-    evi, _ = read_raster(RELEASE / "BRDF_EVI.tif")
-    rainfall, _ = read_raster(RELEASE / "Environmental_Variables" / "hydroclimate_precipitation_ERA.tif")
     lag, _ = read_raster(DATA / "seasonality" / "time_lag_map.tif")
     mask, _ = read_raster(RELEASE / "MCD12Q1_Amazon.tif")
 
@@ -108,18 +169,19 @@ def figure2() -> Path:
     # manuscript map grid is 786 columns, as in the original materials code.
     width, height = 786, 650
     dec = resize_stack(dec, width, height) / 1000.0
-    evi = resize_stack(evi, width, height)
-    rainfall = resize_stack(rainfall, width, height) * 1000.0
     mask = cv2.resize(mask, (width, height), interpolation=cv2.INTER_NEAREST)
-    evi[(evi < 0) | (evi > 1)] = np.nan
     dec[mask != 2] = np.nan
-    evi[mask != 2] = np.nan
-    rainfall[mask != 2] = np.nan
 
-    amplitude = np.nanmax(dec, axis=2) - np.nanmin(dec, axis=2)
+    valid = np.isfinite(dec).any(axis=2)
+    amplitude = np.full(dec.shape[:2], np.nan, dtype=np.float32)
+    amplitude[valid] = np.nanmax(dec[valid], axis=1) - np.nanmin(dec[valid], axis=1)
     extent = [dec_geo[0], dec_geo[0] + dec_geo[1] * width, dec_geo[3] + dec_geo[5] * height, dec_geo[3]]
 
-    locations = pd.read_csv(DATA / "phenocam" / "ATTO_RJA_Location.csv")
+    output_dir = FIGURES if output_dir is None else Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    sites = figure2_site_data()
+    sites.to_csv(output_dir / "Main_Figure2_site_monthly.csv", index=False)
+    locations = pd.read_csv(DATA / "phenocam" / "ATTO_RJA_Location.csv").set_index("Site").loc[["ATTO", "RJA"]]
     site_names = ["ATTO", "RJA"]
     month_labels = list("JFMAMJJASOND")
     fig = plt.figure(figsize=(11.5, 7.0), dpi=220)
@@ -128,11 +190,24 @@ def figure2() -> Path:
     map_axes = [fig.add_subplot(2, 2, 1, projection=projection), fig.add_subplot(2, 2, 2, projection=projection)]
     for ax, data, title, cmap, norm in [
         (map_axes[0], amplitude, "A  Deciduousness amplitude", "YlOrRd", mcolors.Normalize(0, 1)),
-        (map_axes[1], lag, "B  Asynchrony", "RdBu_r", mcolors.BoundaryNorm(np.arange(8), 7)),
+        (map_axes[1], lag, "B  Asynchrony", "RdBu_r", mcolors.PowerNorm(gamma=1.1, vmin=0, vmax=6)),
     ]:
         ax.add_feature(__import__("cartopy.feature", fromlist=["LAND"]).LAND, facecolor="white", zorder=0)
-        ax.imshow(data, origin="upper", extent=extent, transform=projection, cmap=cmap, norm=norm)
+        artist = ax.imshow(data, origin="upper", extent=extent, transform=projection, cmap=cmap, norm=norm)
         add_boundary(ax)
+        for name, location in locations.iterrows():
+            ax.plot(location.Lon, location.Lat, marker="*", color="black", markersize=7, transform=projection)
+            ax.text(location.Lon - 0.5, location.Lat - 1.8, name, fontsize=7, transform=projection)
+        colorbar = fig.colorbar(artist, ax=ax, orientation="horizontal", pad=0.07, fraction=0.04)
+        colorbar.ax.tick_params(labelsize=7)
+        colorbar.set_label("Deciduousness amplitude" if ax is map_axes[0] else "Asynchrony (month)", fontsize=8)
+        inset = ax.inset_axes([0.69, 0.08, 0.26, 0.22])
+        values = data[np.isfinite(data)]
+        bins = np.linspace(0, 1, 21) if ax is map_axes[0] else np.arange(-0.5, 7.5, 1)
+        inset.hist(values, bins=bins, weights=np.ones(len(values)) / len(values), color="0.55", edgecolor="white", linewidth=0.3)
+        inset.set_ylabel("Proportion", fontsize=5)
+        inset.tick_params(labelsize=5, length=2)
+        inset.spines[["top", "right"]].set_visible(False)
         ax.set_extent([-80, -44, -22, 10], crs=projection)
         ax.set_xticks(np.arange(-80, -40, 10), crs=projection)
         ax.set_yticks(np.arange(-20, 11, 10), crs=projection)
@@ -142,23 +217,18 @@ def figure2() -> Path:
         ax.tick_params(labelsize=7)
 
     season_axes = [fig.add_subplot(2, 2, 3), fig.add_subplot(2, 2, 4)]
-    for panel_index, (ax, row) in enumerate(zip(season_axes, locations.itertuples(index=False))):
-        lat, lon = float(row.Lat), float(row.Lon)
-        col = int((lon - dec_geo[0]) / dec_geo[1])
-        r = int((lat - dec_geo[3]) / dec_geo[5])
-        r0, r1 = max(1, r - 1), min(height - 1, r + 2)
-        c0, c1 = max(1, col - 1), min(width - 1, col + 2)
-        d = np.nanmean(dec[r0:r1, c0:c1, :], axis=(0, 1))
-        e = np.nanmean(evi[r0:r1, c0:c1, :], axis=(0, 1))
-        p = np.nanmean(rainfall[r0:r1, c0:c1, :], axis=(0, 1))
-        l = lag[r0:r1, c0:c1]
+    for panel_index, (ax, site) in enumerate(zip(season_axes, site_names)):
+        values = sites.loc[sites.site == site].sort_values("month")
+        d, e, p = (values[name].to_numpy() for name in ("deciduousness_mean", "evi_mean", "precipitation_mm"))
         x = np.arange(12)
         ax2 = ax.twinx()
         ax3 = ax.twinx()
         ax3.spines["right"].set_position(("outward", 30))
-        ax.errorbar(x, d, yerr=np.nanstd(dec[r0:r1, c0:c1, :], axis=(0, 1)), color="black", marker="o", lw=1, ms=3)
-        ax2.plot(x, e, color="green", marker="o", lw=1, ms=3)
+        ax.errorbar(x, d, yerr=values.deciduousness_interannual_sd, color="black", marker="o", lw=1, ms=3)
+        ax2.errorbar(x, e, yerr=values.evi_interannual_sd, color="green", marker="o", lw=1, ms=3)
         ax3.bar(x, p, color="#0C7BDC", alpha=0.35, width=0.85)
+        for month in np.flatnonzero(p < 100):
+            ax.axvspan(month - 0.5, month + 0.5, color="#D8D3C5", alpha=0.3, zorder=0)
         ax.set_title(f"{chr(67 + panel_index)}  {site_names[panel_index]}", loc="left", fontsize=10)
         ax.set_ylabel("Deciduousness", fontsize=8)
         ax2.set_ylabel("EVI", color="green", fontsize=8)
@@ -167,21 +237,23 @@ def figure2() -> Path:
         ax.tick_params(axis="y", labelsize=7)
         ax2.tick_params(axis="y", labelsize=7, colors="green")
         ax3.tick_params(axis="y", labelsize=7, colors="#0C7BDC")
-        ax.text(0.03, 0.92, f"Δt = {np.nanmean(l):.1f} ± {np.nanstd(l):.1f} month\nMAP = {np.nansum(p):.0f} mm yr$^{{-1}}", transform=ax.transAxes, fontsize=7, va="top")
+        ax.text(0.03, 0.92, f"Δt = {values.lag_mean_month.iloc[0]:.1f} ± {values.lag_spatial_sd_month.iloc[0]:.1f} month\nMAP = {np.nansum(p):.0f} mm/year", transform=ax.transAxes, fontsize=7, va="top")
 
     fig.tight_layout()
-    out = FIGURES / "Main_Figure2_reproduced.png"
+    out = output_dir / "Main_Figure2_reproduced.png"
     fig.savefig(out, bbox_inches="tight")
     plt.close(fig)
     return out
 
 
-def figure3_map(strict: bool = False) -> Path:
+def figure3_map(strict: bool = False, output_dir: Path | None = None) -> Path:
     """Render the released three-driver SHAP composition used by Figure 3e."""
 
     import cartopy.crs as ccrs
     from cartopy.mpl.ticker import LatitudeFormatter, LongitudeFormatter
 
+    output_dir = FIGURES if output_dir is None else Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
     drivers, geo = read_raster(DATA / "drivers" / "asynchrony_driver_map_3type.tif")
     rgb = np.array([[208, 28, 139], [65, 182, 196], [253, 184, 99]], dtype=np.float32) / 255.0
     image = np.nansum(drivers[..., None] * rgb[None, None, :, :], axis=2)
@@ -224,10 +296,10 @@ def figure3_map(strict: bool = False) -> Path:
     for idx, value in enumerate(proportions[order]):
         inset.text(idx, value + 0.015, f"{value * 100:.1f}%", ha="center", fontsize=6)
     fig.tight_layout()
-    out = FIGURES / "Main_Figure3e_reproduced.png"
+    out = output_dir / "Main_Figure3e_reproduced.png"
     fig.savefig(out, bbox_inches="tight")
     plt.close(fig)
-    with (FIGURES / "Main_Figure3e_reproduced_metrics.json").open("w", encoding="utf-8") as stream:
+    with (output_dir / "Main_Figure3e_reproduced_metrics.json").open("w", encoding="utf-8") as stream:
         json.dump(metrics, stream, indent=2)
     print("Figure 3e driver proportions:", dict(zip(names.tolist(), np.round(proportions, 4).tolist())))
     if strict and not metrics["rounded_percent_match"]:
@@ -242,8 +314,11 @@ def figure3_map(strict: bool = False) -> Path:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", type=Path, default=FIGURES)
+    args = parser.parse_args()
     print("Repository root:", ROOT)
-    outputs = [figure2(), figure3_map(strict=True)]
+    outputs = [figure2(args.output_dir), figure3_map(strict=True, output_dir=args.output_dir)]
     for path in outputs:
         print("Wrote:", path)
 

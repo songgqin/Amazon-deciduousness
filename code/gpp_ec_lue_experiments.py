@@ -162,7 +162,7 @@ leaf_age_path = r'data/leaf_age/Leaf_Age_ln_Dec_Litterfall_LAI_0414v2.tif'
 
 param_summary_path = r'data/gpp/parameters/EC_LUE_Models_Parameters_Optimization_Summary.csv'
 
-cls_modis_path = r'data/forest_mask/MCD12Q1_Amazon_500m.tif'
+cls_modis_path = r'data/forest_mask/MCD12Q1_Amazon.tif'
 
 print(">>> Reading forest mask...")
 

@@ -2,6 +2,18 @@
 
 This repository contains cleaned research code for Amazon forest deciduousness mapping, seasonality assessment, driver exploration, leaf-age modeling, Sentinel-2 unmixing, and LUE-based GPP experiments.
 
+## License
+
+The authors' original code and associated software documentation are licensed
+under the [MIT License](LICENSE). Retain the copyright and license notice when
+redistributing the software or substantial portions of it.
+
+This grant does not cover research datasets, manuscript material, or third-party
+code and dependencies. Their original licenses and attribution requirements
+continue to apply. Dataset-specific redistribution permissions and third-party
+provenance are still being audited; inclusion in this repository is not a grant
+of MIT rights to those materials.
+
 
 ## Repository Layout
 
@@ -14,14 +26,25 @@ requirements.txt            Python package requirements
 
 ## Setup
 
-GDAL, Cartopy, Rasterio, and TensorFlow are easiest to install with Conda because they depend on compiled geospatial and numerical libraries.
+Download the actual raster data with Git LFS, not just the small pointer files:
 
 ```bash
-conda create -n amazon-deciduousness python=3.10
-conda activate amazon-deciduousness
-conda install -c conda-forge gdal cartopy rasterio shapely
-pip install -r requirements.txt
+git lfs install
+git clone https://github.com/songgqin/Amazon-deciduousness.git
+cd Amazon-deciduousness
+git lfs pull
+git lfs fsck
 ```
+
+The current figure checks were run on Windows using Python 3.13.2, NumPy 2.2.0,
+pandas 2.3.1, OpenCV 4.12.0, Matplotlib 3.10.0, Cartopy 0.25.0 and GDAL 3.6.2.
+Figure 3 additionally requires the validated XGBoost 3.0.4 / SHAP 0.48.0 setup
+and an NVIDIA GPU for the original `gpu_hist` calculation.
+
+`requirements.txt` is an unpinned inventory of dependencies across workflows,
+not a tested installation lockfile. A clean-environment installation and full
+end-to-end rerun are still pending. The former generic Python 3.10 recipe was
+not the environment used for the validated figures and has been removed.
 
 Run scripts from the repository root so relative `data/...` and `outputs/...` paths resolve correctly. The scripts are divided with `# In[]` markers so they can also be opened and run as cells in PyCharm, Spyder, or Jupyter-style IDE workflows.
 
@@ -46,7 +69,7 @@ data/validation/            Eddy-flux and ground-validation tables
 `data/sentinel2/rja_shared/` keeps a site/year directory structure because `code/sentinel2_site_unmixing.py` iterates over that hierarchy. Duplicate filenames from different source folders were unified by keeping distinct descriptive names:
 
 - `data/seasonality/BRDF_EVI_3years_mean.tif` for Figure 2 seasonality.
-- `data/deciduousness/Composite_Data_5km_gf_3y.tif` for Figure 2 plotting.
+- `data/deciduousness/Figure2_Deciduousness_Seasonality.tif` for revised Figure 2 site curves.
 - `data/gpp/inputs/GPP_BRDF_EVI.tif` for GPP experiments.
 - `data/deciduousness/Composite_Data_5km_gf_3y.tif` for main/GPP workflows.
 
@@ -90,6 +113,24 @@ python code/reproduce_main_figures.py
 ```
 
 The generated QA figures are written to `outputs/figures/` and are intentionally ignored by Git.
+Use `--output-dir outputs/figures/my_run` to preserve earlier figure outputs.
+
+The Figure 2 site curves use each product's native 3 x 3 pixel neighborhood.
+Error bars are the interannual SD (`ddof=0`) of the spatial means for 2019,
+2020 and 2021, matching the author's revised local calculation. The plotted
+means come from the supplied three-year mean rasters. The generated
+`Main_Figure2_site_monthly.csv` records the means, SDs, individual years,
+precipitation and lag statistics. The 24 site-month records were compared
+against an independent execution of the original local calculation: maximum
+absolute differences were 1.5e-8 for deciduousness means, 1.2e-8 for their SDs,
+and zero for EVI means/SDs, precipitation and lag statistics. See
+[the input notes](data/deciduousness/README.md) for the distinct mean products.
+
+These checks do not establish full publication reproducibility. Figure 1 is a
+conceptual illustration. Figure 2 map-generation parity, fresh GPP simulation
+for Figure 4, complete Extended Data/Supplementary coverage, dataset licensing,
+and clean-environment validation remain under audit. The commands below check
+released products; they do not regenerate the entire analysis from raw data.
 
 The strict main-text check is:
 
