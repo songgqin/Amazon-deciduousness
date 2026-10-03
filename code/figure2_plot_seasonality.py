@@ -135,7 +135,7 @@ rainfall_path = r'data/drivers/inputs/hydroclimate_precipitation_ERA.tif'
 _geo, _prj, rainfall = readTif_gdal(rainfall_path)
 rainfall = cv2.resize(rainfall.astype(np.float32), (raws_y, colums_x)) * 1000.0
 
-time_lag_path = r'outputs/seasonality/time_lag_map_0521.tif'
+time_lag_path = r'outputs/seasonality/time_lag_map.tif'
 _, _, time_lag = readTif_gdal(time_lag_path)
 
 evi_dir = r'data/seasonality'
@@ -336,10 +336,10 @@ os.makedirs(r'outputs/figures', exist_ok=True)
 save_path = r'outputs/figures/FigMF_2_Seasonality_Dec_EVI.png'
 plt.savefig(save_path, bbox_inches='tight', dpi=300)
 
-time_lag_path = r'outputs/seasonality/time_lag_map_0521.tif'
+time_lag_path = r'outputs/seasonality/time_lag_map.tif'
 _geo, _prj, time_lag = readTif_gdal(time_lag_path)
 
-correlation_path = r'outputs/seasonality/Cor_Dec_EVI_0521.tif'
+correlation_path = r'outputs/seasonality/deciduousness_evi_correlation.tif'
 
 _, _, correlation_map = readTif_gdal(correlation_path)
 
@@ -398,7 +398,7 @@ ax.text(-47.5, -24, 'High', clip_on=True, transform=ccrs.PlateCarree())
 
 cbar.set_label(r'$\triangle$$\mathit{t}$ (month)', fontsize=12)
 
-save_path = r'outputs/figures/Time_Lag_Map_phenocam_0521.png'
+save_path = r'outputs/figures/time_lag_map_phenocam.png'
 plt.savefig(save_path, bbox_inches='tight', dpi=300)
 
 cmap = plt.cm.BrBG
@@ -451,5 +451,5 @@ cbar = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=custom_cmap), ax=ax, o
 
 cbar.set_label('Correlation coefficient', fontsize=12)
 
-save_path = r'outputs/figures/EVI_Dec_Cor_phenocam_0521.png'
+save_path = r'outputs/figures/evi_deciduousness_correlation_phenocam.png'
 plt.savefig(save_path, bbox_inches='tight', dpi=300)

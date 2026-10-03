@@ -195,7 +195,7 @@ def save_tif(grouthTif, savePath, Geo_, Projection_, nbands):
 
     del outputData
 
-data_path =  r'data/drivers/Asynchrony_shap_map_3type_drivers_0818.tif'
+data_path =  r'data/drivers/asynchrony_driver_map_3type.tif'
 
 im_geotrans, _proj, drivers = readTif_gdal(data_path)
 
@@ -457,7 +457,7 @@ shp_polygon = [load_wkt(polygon) for polygon in polygons]
 feature_name = ['PAR', 'Hydroclimate', 'Soil', 'Vegetation', 'VPD', ]
 feature_name = ['PAR', 'Hydroclimate', 'Soil']
 
-dominant_path = r'data/drivers/Dominant_four_class_herbivory_0818.tif'
+dominant_path = r'data/drivers/dominant_driver_map.tif'
 
 reduce_rmse = [8.4]
 corresponding_gpp = [2.1]
@@ -480,7 +480,7 @@ unique, counts = np.unique(dominant_res, return_counts=True)
 counts_pro = counts / np.sum(counts)
 print('Proportion of the area by herbivory class:', np.round(counts_pro, 3))
 
-dominant_path = r'data/drivers/Asynchrony_shap_map_3type_drivers_0818.tif'
+dominant_path = r'data/drivers/asynchrony_driver_map_3type.tif'
 
 with rasterio.open(dominant_path) as src:
     for i, polygon in enumerate(shp_polygon):

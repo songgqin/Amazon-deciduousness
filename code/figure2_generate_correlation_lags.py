@@ -194,9 +194,9 @@ time_lag_map2[time_lag_map2 > 6] = 12 - time_lag_map2[time_lag_map2 > 6]
 cor_np_map[~forest_mask] = np.nan
 
 os.makedirs(r'outputs/seasonality', exist_ok=True)
-save_path = r'outputs/seasonality/time_lag_map_0521.tif'
+save_path = r'outputs/seasonality/time_lag_map.tif'
 
 save_tif(time_lag_map2, save_path, _geo, _prj, 1)
 
-correlation_path = r'outputs/seasonality/Cor_Dec_EVI_0521.tif'
+correlation_path = r'outputs/seasonality/deciduousness_evi_correlation.tif'
 save_tif(cor_np_map, correlation_path, _geo, _prj, 1)

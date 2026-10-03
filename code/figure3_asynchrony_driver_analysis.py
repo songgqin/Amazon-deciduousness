@@ -1,16 +1,16 @@
 """Reproduce Figure 3 from the repository inputs using the manuscript model.
 
 Requires XGBoost 3.0.4 with CUDA support for the original ``gpu_hist`` model.
-Each run is written to a new outputs/drivers/figure3_runs directory; the released
-raster is never overwritten automatically. Numerical manuscript gates run before
-the new raster is saved. Run with the same environment as the validated model.
+Each run is written to ``outputs/drivers/figure3_reproduction`` or to the
+directory supplied with ``--output-dir``; the released raster is never
+overwritten automatically. Numerical manuscript gates run before the new
+raster is saved. Run with the same environment as the validated model.
 """
 
 # In[] Imports
 import argparse
 import hashlib
 import json
-from datetime import datetime
 import seaborn as sns
 from scipy import stats
 from amazon_preprocessing import readTif_gdal
@@ -50,8 +50,7 @@ ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--output-dir', type=Path, help='New directory for this run.')
 args = parser.parse_args()
-OUTPUT = (args.output_dir or ROOT / 'outputs/drivers/figure3_runs' /
-          datetime.now().strftime('%Y%m%d_%H%M%S_%f')).resolve()
+OUTPUT = (args.output_dir or ROOT / 'outputs/drivers/figure3_reproduction').resolve()
 OUTPUT.mkdir(parents=True, exist_ok=False)
 FIGURES = OUTPUT / 'figures'
 FIGURES.mkdir()
@@ -199,7 +198,7 @@ vif_data = add_constant(pd_data)
 vif = pd.Series([variance_inflation_factor(vif_data.values, i) for i in range(vif_data.shape[1])],
                 index=vif_data.columns)
 
-deciduousness_path = str(ROOT / 'data/seasonality/time_lag_map_0521.tif')
+deciduousness_path = str(ROOT / 'data/seasonality/time_lag_map.tif')
 
 _geo, _prj, deciduousness = readTif_gdal(deciduousness_path)
 
@@ -406,7 +405,7 @@ plt.text(0.05, 0.80, f'r^2 = {corr:.2f}',
 plt.tight_layout()
 plt.show()
 
-save_path = str(FIGURES / 'FigS7_cross_validation_0521.png')
+save_path = str(FIGURES / 'figure3_cross_validation.png')
 plt.savefig(save_path, dpi=300, bbox_inches='tight')
 
 model = xgb.XGBRegressor(**params)
@@ -534,7 +533,7 @@ cbar = fig.colorbar(im, cax=cbar_ax, orientation='horizontal')
 cbar.set_label('Number of samples', fontsize=7)
 cbar.ax.tick_params(labelsize=6)
 
-save_path = str(FIGURES / 'FigS9_Partial_dependence_plot_4x3_0521.png')
+save_path = str(FIGURES / 'figure3_partial_dependence.png')
 fig.savefig(save_path, dpi=300, bbox_inches='tight')
 
 width_x, height_y = 650, 786
@@ -808,7 +807,7 @@ cbar = fig.colorbar(im, cax=cax, shrink=1.2, fraction=0.08, aspect=30, pad=0.05,
 cbar.ax.tick_params(labelsize=7)
 cbar.set_label('Number of samples', fontsize=8)
 
-save_path = str(FIGURES / 'Fig4_driver_Vegetation_removal_0818.png')
+save_path = str(FIGURES / 'figure3_driver_relationships.png')
 fig.savefig(save_path, dpi=300, bbox_inches='tight')
 
 width_x, height_y = 650, 786
@@ -884,7 +883,7 @@ np.savez_compressed(OUTPUT / 'figure3_shap_outputs.npz',
                     features=data_x, response=data_y, shap_values=shap_values,
                     cv_response=test_y_list, cv_prediction=predictions_list,
                     valid_mask=~final_mask, driver_map=drivers_top3_map_nor)
-save_path = str(OUTPUT / 'Asynchrony_shap_map_3type_drivers_0818.tif')
+save_path = str(OUTPUT / 'asynchrony_driver_map_3type.tif')
 save_tif(drivers_top3_map_nor, save_path, _geo, _prj, 3)
 plt.close('all')
 print('Figure 3 manuscript gates passed. Wrote:', save_path)

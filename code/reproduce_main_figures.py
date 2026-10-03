@@ -101,7 +101,7 @@ def figure2() -> Path:
     dec, dec_geo = read_raster(RELEASE / "Deciduousness_Seasonality_Amazon.tif")
     evi, _ = read_raster(RELEASE / "BRDF_EVI.tif")
     rainfall, _ = read_raster(RELEASE / "Environmental_Variables" / "hydroclimate_precipitation_ERA.tif")
-    lag, _ = read_raster(DATA / "seasonality" / "time_lag_map_0521.tif")
+    lag, _ = read_raster(DATA / "seasonality" / "time_lag_map.tif")
     mask, _ = read_raster(RELEASE / "MCD12Q1_Amazon.tif")
 
     # The public release contains the native 785-column products.  The
@@ -182,14 +182,14 @@ def figure3_map(strict: bool = False) -> Path:
     import cartopy.crs as ccrs
     from cartopy.mpl.ticker import LatitudeFormatter, LongitudeFormatter
 
-    drivers, geo = read_raster(DATA / "drivers" / "Asynchrony_shap_map_3type_drivers_0818.tif")
+    drivers, geo = read_raster(DATA / "drivers" / "asynchrony_driver_map_3type.tif")
     rgb = np.array([[208, 28, 139], [65, 182, 196], [253, 184, 99]], dtype=np.float32) / 255.0
     image = np.nansum(drivers[..., None] * rgb[None, None, :, :], axis=2)
     image[np.all(np.isnan(drivers), axis=2)] = 1.0
     valid = np.isfinite(drivers).all(axis=2) & (np.nansum(drivers, axis=2) > 0)
     proportions = np.nanmean(drivers[valid], axis=0)
     metrics = {
-        "source_raster": str((DATA / "drivers" / "Asynchrony_shap_map_3type_drivers_0818.tif").relative_to(ROOT)),
+        "source_raster": str((DATA / "drivers" / "asynchrony_driver_map_3type.tif").relative_to(ROOT)),
         "band_order": ["Light", "Hydroclimate", "Soil"],
         "valid_pixels": int(valid.sum()),
         "proportions": {name: float(value) for name, value in zip(["Light", "Hydroclimate", "Soil"], proportions)},
@@ -236,7 +236,7 @@ def figure3_map(strict: bool = False) -> Path:
             f"{np.round(proportions * 100, 1).tolist()}% (Light, Hydroclimate, Soil), "
             "but the Word Figure 3 panel e gives "
             f"{np.round(FIGURE3_TARGET_PROPORTIONS * 100, 1).tolist()}%. "
-            "The exact revision raster is missing or differs from the checked-in 0818 raster."
+            "The exact revision raster is missing or differs from the checked-in driver raster."
         )
     return out
 
