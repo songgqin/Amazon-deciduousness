@@ -32,20 +32,20 @@ Methods are described in the corresponding manuscript and Supplementary captions
 | ED Fig. 1 | No dedicated entry point | Boundaries and site metadata included | Site overview map | Not included in this release |
 | ED Fig. 4 | No dedicated entry point | Some comparison products included | Cross-product comparison | Not included in this release |
 | ED Fig. 5 | Related: `figure3_asynchrony_driver_analysis.py` | Eight predictor inputs included | SHAP/model plots | Related outputs executed; exact caption-specific panel not separately checked |
-| ED Fig. 6 | Related: driver analysis | Predictors and regional masks included | Regional contributions | Complete figure workflow not included in this release |
+| ED Fig. 6 | Related: driver analysis | Raster inputs included; third-party ecoregion geometry and polygon-based analysis excluded | Regional contributions | Complete figure workflow not included in this release |
 | ED Fig. 8 | Related: GPP generators | Monthly GPP products included | Monthly/site panels | Complete figure workflow not included in this release |
-| ED Fig. 9 | Related: GPP evaluation | GPP, masks and regional geometry included | Ecoregion attribution | Complete figure workflow not included in this release |
+| ED Fig. 9 | Related: GPP evaluation | Raster inputs included; third-party ecoregion geometry and polygon-based analysis excluded | Ecoregion attribution | Complete figure workflow not included in this release |
 | ED Fig. 10 | Related: GPP experiments | Model products and some site data included | Leaf-age attribution | Complete figure workflow not included in this release |
 | SI Fig. 1 | No dedicated entry point | Deciduousness composites included | Threshold-area analysis | Not included in this release |
 | SI Fig. 2 | Site unmixing example only | Selected Sentinel-2 scenes and composites included | Resolution/endmember comparison | Full figure workflow not included in this release |
 | SI Fig. 3 | No dedicated entry point | Deciduousness and lag included | Binned amplitude-lag analysis | Not included in this release |
 | SI Fig. 4 | No dedicated entry point | Regional masks included | Regional histograms | Not included in this release |
 | SI Fig. 5 | No dedicated entry point | EVI and GPP kNDVI inputs included | Seasonal index comparison | Full figure workflow not included in this release |
-| SI Fig. 6 | No dedicated entry point | Lag and regional inputs included | Peak-to-peak timing | Not included in this release |
+| SI Fig. 6 | No dedicated entry point | Raster inputs included; third-party ecoregion geometry and polygon-based analysis excluded | Peak-to-peak timing | Not included in this release |
 | SI Fig. 8 | No dedicated entry point | Core predictors included; MOD11A2 source linked in provenance | LST sensitivity | Not included in this release |
 | SI Fig. 9 | Related: driver analysis | Predictors and SHAP dependencies included | Amplitude-stratified fits | Complete figure workflow not included in this release |
 | SI Fig. 10 | Related: GPP evaluation | GOSIF and CSIF inputs included | Separate SIF comparisons | Complete figure workflow not included in this release |
-| SI Fig. 11 | Related: GPP experiments | GPP products and regional inputs included | Regional annual GPP | Complete figure workflow not included in this release |
+| SI Fig. 11 | Related: GPP experiments | Raster inputs included; third-party ecoregion geometry and polygon-based analysis excluded | Regional annual GPP | Complete figure workflow not included in this release |
 | SI Fig. 12 | No dedicated entry point | BRDF EVI included; MAIAC source linked in provenance | EVI product comparison | Not included in this release |
 | SI Fig. 13 | No dedicated entry point | BRDF lag inputs included; MAIAC source linked in provenance | Product-specific lag comparisons | Not included in this release |
 | SI Fig. 14 | None | Full drone/source-image collection not supplied | Image comparison | Not included in this release |

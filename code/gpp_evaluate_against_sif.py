@@ -22,7 +22,6 @@ import cartopy.feature as cfeature
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 import matplotlib.colors as mcolors
 import warnings
-import cartopy.io.shapereader as shpreader
 
 # In[] Workflow
 ROOT = Path(__file__).resolve().parents[1]
@@ -79,14 +78,6 @@ def vectorized_pearsonr(x, y):
     with np.errstate(divide='ignore', invalid='ignore'):
         return r_num / r_den
 
-def add_shp(ax, shp_path, **kwargs):
-    proj = ccrs.PlateCarree()
-    reader = shpreader.Reader(shp_path)
-    provinces = reader.geometries()
-    ax.add_geometries(provinces, proj, **kwargs)
-    reader.close()
-
-
 def delta_histogram(ax, values, fontsize=9):
     """Probability histogram and strict-positive fraction, as in the revision."""
     from matplotlib.patches import Rectangle
@@ -114,7 +105,6 @@ print(">>> Initializing masks and SIF validation data...")
 raws_y, columns_x = 786, 650
 img_extent = [-79.77, -44.51, -20.52, 8.62]
 map_extent = [-80, -44, -22, 10]
-shp_path = r'data/boundaries/Amazon_ThreeRegions_Clip.shp'
 
 cls_path = r'data/forest_mask/MCD12Q1_Amazon.tif'
 _, _, cls_md = readTif_gdal_safe(cls_path)
@@ -369,7 +359,6 @@ ax_map = fig_main.add_axes([0.05, 0.20, 0.46, 0.75], projection=proj)
 ax_map.add_feature(cfeature.LAND, facecolor='white', zorder=1)
 ax_map.add_feature(cfeature.OCEAN, zorder=2)
 
-add_shp(ax_map, shp_path, lw=0.8, ec='k', fc='none', zorder=4)
 
 map_data_ens = delta_r_maps['Ensemble Mean']
 im_main = ax_map.imshow(map_data_ens, origin='upper', extent=img_extent, transform=proj,
@@ -499,7 +488,6 @@ for i, model_name in enumerate(plot_order):
     ax.add_feature(cfeature.LAND, facecolor='white', edgecolor='none', zorder=1)
     ax.add_feature(cfeature.OCEAN,  edgecolor='none', zorder=2, alpha=0.8)
 
-    add_shp(ax, shp_path, lw=0.8, ec='k', fc='none', zorder=5)
 
     im = ax.imshow(map_data, origin='upper', extent=img_extent, transform=ccrs.PlateCarree(),
                    zorder=4, cmap=custom_cmap, norm=norm)

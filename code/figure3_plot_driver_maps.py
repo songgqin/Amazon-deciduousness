@@ -156,22 +156,12 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
 import cartopy.feature as cfeature
-import cartopy.io.shapereader as shpreader
 
 plt.rcParams['font.sans-serif'] = 'Helvetica'
 plt.rcParams["axes.unicode_minus"] = True
 matplotlib.use("Agg")
 matplotlib.rcParams['figure.dpi'] = 150
 cm2in = 1 / 2.54
-
-def add_shp(ax, **kwargs):
-    proj = ccrs.PlateCarree()
-
-    reader = shpreader.Reader(r'data/boundaries/Amazon_ThreeRegions_Clip.shp')
-
-    provinces = reader.geometries()
-    ax.add_geometries(provinces, proj, **kwargs)
-    reader.close()
 
 def save_tif(grouthTif, savePath, Geo_, Projection_, nbands):
     gdal.UseExceptions()
@@ -288,7 +278,6 @@ ax = fig.add_axes([left, bottom, width, height], projection=proj)
 ax.add_feature(cfeature.LAND, facecolor='white', zorder=1)
 ax.add_feature(cfeature.OCEAN, zorder=2)
 
-add_shp(ax, lw=0.6, ec='k', fc='none', zorder=3)
 
 im = ax.imshow(data_gamma_corrected, origin='upper',
                extent=[-79.77497863776252, -44.516103736085974, -20.521922834169924, 8.628408135496414],
@@ -390,40 +379,7 @@ os.makedirs(r'outputs/figures', exist_ok=True)
 fig.savefig(r'outputs/figures/Fig3_Driver_Map.png', dpi=300, bbox_inches='tight')
 plt.show()
 
-from shapely.wkt import loads as load_wkt
-import rasterio
-import rasterio.mask
-from osgeo import ogr
-
-shp_path = r'data/boundaries/Amazon_ThreeRegions_Clip.shp'
-
-shp_file = ogr.Open(shp_path)
-
-layer = shp_file.GetLayer()
-
-polygons = [feature.GetGeometryRef().ExportToWkt() for feature in layer]
-polygons_name = [feature.GetField('Name') for feature in layer]
-
-shp_polygon = [load_wkt(polygon) for polygon in polygons]
-
-feature_name = ['PAR', 'Hydroclimate', 'Soil', 'Vegetation', 'VPD', ]
-feature_name = ['PAR', 'Hydroclimate', 'Soil']
-
 dominant_path = r'data/drivers/asynchrony_driver_map_3type.tif'
-
-with rasterio.open(dominant_path) as src:
-    for i, polygon in enumerate(shp_polygon):
-
-        out_image, out_transform = rasterio.mask.mask(src, [polygon], crop=True)
-
-        out_image = out_image.transpose(1, 2, 0)
-        out_image = out_image.astype(np.float32)
-        mask_img = np.nansum(out_image, 2)>0
-        out_image_res = out_image[mask_img,:]
-
-        counts_pro = np.nanmean(out_image_res, axis=0)
-
-        print(polygons_name[i],'Hydroclimate: {:.3f}, PAR: {:.3f}, Soil: {:.3f}'.format(counts_pro[1], counts_pro[0], counts_pro[2]))
 
 _geo, _proj, dominant = readTif_gdal(dominant_path)
 mask_basin = np.nansum(dominant, axis=2) > 0

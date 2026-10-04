@@ -79,20 +79,6 @@ def resize_stack(array: np.ndarray, width: int, height: int) -> np.ndarray:
     )
 
 
-def add_boundary(ax) -> None:
-    """Draw the released Amazon three-region boundary when Cartopy is present."""
-
-    try:
-        import cartopy.crs as ccrs
-        import cartopy.io.shapereader as shpreader
-
-        reader = shpreader.Reader(str(DATA / "boundaries" / "Amazon_ThreeRegions_Clip.shp"))
-        ax.add_geometries(reader.geometries(), ccrs.PlateCarree(), facecolor="none", edgecolor="black", linewidth=0.45)
-        reader.close()
-    except ImportError:
-        return
-
-
 def figure2_site_data(lag_path: Path | None = None) -> pd.DataFrame:
     """Match the local revision: native 3x3 patches and SD across three years.
 
@@ -194,7 +180,6 @@ def figure2(output_dir: Path | None = None, lag_path: Path | None = None) -> Pat
     ]:
         ax.add_feature(__import__("cartopy.feature", fromlist=["LAND"]).LAND, facecolor="white", zorder=0)
         artist = ax.imshow(data, origin="upper", extent=extent, transform=projection, cmap=cmap, norm=norm)
-        add_boundary(ax)
         for name, location in locations.iterrows():
             ax.plot(location.Lon, location.Lat, marker="*", color="black", markersize=7, transform=projection)
             ax.text(location.Lon - 0.5, location.Lat - 1.8, name, fontsize=7, transform=projection)
@@ -277,7 +262,6 @@ def figure3_map(strict: bool = False, output_dir: Path | None = None, driver_pat
     ax = fig.add_subplot(1, 1, 1, projection=projection)
     ax.add_feature(cfeature.LAND, facecolor="white")
     ax.imshow(image, origin="upper", extent=[geo[0], geo[0] + geo[1] * image.shape[1], geo[3] + geo[5] * image.shape[0], geo[3]], transform=projection)
-    add_boundary(ax)
     ax.set_extent([-80, -44, -22, 10], crs=projection)
     ax.set_xticks(np.arange(-80, -40, 10), crs=projection)
     ax.set_yticks(np.arange(-20, 11, 10), crs=projection)

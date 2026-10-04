@@ -19,7 +19,7 @@ import pandas as pd
 import cartopy.crs as ccrs
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 
-from reproduce_main_figures import read_raster, add_boundary, figure2_site_data
+from reproduce_main_figures import read_raster, figure2_site_data
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
@@ -138,7 +138,6 @@ def map_panel(values, geo, locations, output, stem, label, is_lag=False):
     extent = [geo[0], geo[0] + geo[1] * width, geo[3] + geo[5] * height, geo[3]]
     artist = ax.imshow(values, extent=extent, origin="upper", transform=projection,
                        cmap=cmap, norm=norm, interpolation="nearest")
-    add_boundary(ax)
     for site, loc in locations.iterrows():
         ax.plot(loc.Lon, loc.Lat, marker="*", color="black", ms=9, transform=projection)
         ax.text(loc.Lon - 0.6, loc.Lat - 1.8, site, fontsize=9, transform=projection)

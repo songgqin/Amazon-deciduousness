@@ -28,7 +28,7 @@ The analyses address three connected questions:
 | `data/gpp/`, `data/leaf_age/` | Productivity inputs, model parameters, leaf-age products, and released model results |
 | `data/phenocam/`, `data/validation/` | Site observations and validation tables |
 | `data/sentinel2/` | Sentinel-2 inputs for site-level unmixing |
-| `data/forest_mask/`, `data/boundaries/` | Land-cover masks and geographic boundaries |
+| `data/forest_mask/` | Land-cover masks |
 | `data/maintext_release/` | Companion manuscript data release |
 | `docs/` | Workflow coverage and data-provenance documentation |
 | `outputs/` | Locally generated results; excluded from Git version control |
@@ -310,6 +310,14 @@ For figure-specific verification and data provenance, see:
 - [Figure workflow coverage](docs/FIGURE_WORKFLOW_COVERAGE.md)
 - [Data provenance and reuse boundaries](docs/DATA_PROVENANCE.md)
 - [Deciduousness input notes](data/deciduousness/README.md)
+
+## Third-party ecoregion geometry
+
+The ecoregion polygon supplied by Chen et al. (2024) is not redistributed
+because permission for public redistribution has not been established.
+Public maps omit its outlines, and polygon-based regional summaries are
+excluded. Basin-wide raster calculations and model evaluation are retained.
+For access to the original geometry, contact the original data providers.
 
 ## License
 
