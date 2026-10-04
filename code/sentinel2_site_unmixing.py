@@ -3,6 +3,8 @@
 """
 
 # In[] Imports
+# Load GDAL before TensorFlow to avoid a Windows DLL-loading conflict.
+from osgeo import gdal
 import matplotlib.pyplot as plt
 from ecae_modules_four_bands import get_endmember_band_range_percentage, train_autoencoder, plot_endmember
 import unmixing
