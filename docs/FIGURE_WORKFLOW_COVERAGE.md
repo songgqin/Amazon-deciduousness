@@ -1,76 +1,80 @@
-# Figure workflow coverage
+# Figure workflows
 
-This matrix records what the public repository currently supports for the
-caption set in the Nature manuscript and Supplementary Information. It is a
-coverage audit, not a claim that every caption has a runnable end-to-end
-workflow. A workflow marked **A** has a public entry point and a recorded
-validation against the released processed products. **B** means that public
-inputs or related code exist, but the complete caption-specific figure has not
-passed an independent gate. **C** means that a source workflow, input dataset,
-or both still need to be released or rebuilt. **K** denotes a conceptual
-illustration rather than a data-generating analysis.
+This list separates the input starting point, available outputs, and checks
+performed on those outputs. "Executed" means the script completed; it does
+not by itself establish numerical agreement or independent validation.
+ED denotes Extended Data; SI denotes Supplementary Information.
 
-The matrix deliberately excludes the workstation-only `Materials_for_mainfigure`
-bundle, original private work-code packages, Word documents, and reference
-figure images. A public script reading a released processed raster is not
-counted as reconstruction from raw satellite or field observations.
+## Main and Validation Figures
 
-| Caption | Status | Public entry point or available inputs | Remaining boundary |
-| --- | --- | --- | --- |
-| Main Fig. 1 | K | None; conceptual framework | Artwork is not a computational workflow |
-| Main Fig. 2 | B | `code/reproduce_main_figures.py`, `code/figure2_generate_time_lags.py`, `code/figure2_plot_seasonality.py`; seasonality, EVI, precipitation, amplitude, lag and site inputs | Validated from released processed inputs; upstream satellite retrieval and the original raw-observation chain are outside this repository |
-| Main Fig. 3 | A | `code/figure3_asynchrony_driver_analysis.py`, `code/figure3_plot_driver_maps.py`; public driver inputs and forest mask | Validated model refit and driver raster; plotting helper was repaired in this release |
-| Main Fig. 4 | A | `code/reproduce_main_text.py`, three GPP generators and `code/gpp_evaluate_against_sif.py` | Regeneration starts from released processed inputs, calibrated parameters and leaf-age products |
-| ED Fig. 1 | B | Public basin boundary, site tables and observation metadata | Dedicated map-generation workflow and complete source-data audit remain |
-| ED Fig. 2 | B | `code/site_phenocam_evaluation.py`, phenocam and Sentinel-2 site inputs | Caption-specific figure and paired-observation gate remain |
-| ED Fig. 3 | B | `code/site_ground_evaluation.py`, validation tables and public site inputs | Full 47-site, plot, GEI and scene-level reproduction is not yet gated |
-| ED Fig. 4 | C | Some driver/reference rasters are public | Cross-product plotting workflow and all product provenance are incomplete |
-| ED Fig. 5 | B | Figure 3 XGBoost/SHAP inputs and `code/figure3_asynchrony_driver_analysis.py` | Eight-variable caption-specific plot not independently validated |
-| ED Fig. 6 | B | Driver model inputs and regional masks are public | Regional contribution plot needs a dedicated public entry point and gate |
-| ED Fig. 7 | A | `code/gpp_evaluate_against_sif.py`; all three formulation comparisons | Validated strict-positive percentages and maps from regenerated GPP |
-| ED Fig. 8 | B | Three GPP generators and released 12 monthly GPP products | Caption-specific 12-panel/site plotting workflow remains |
-| ED Fig. 9 | B | GPP products, masks and evaluation code | Ecoregion attribution panel and dedicated map workflow remain |
-| ED Fig. 10 | B | GPP generators and site observations | Leaf-age attribution plot needs a dedicated public entry point |
-| SI Fig. 1 | C | Deciduousness products are public | Threshold-area analysis script and exact source-data provenance remain |
-| SI Fig. 2 | C | Public 5-km products only | 10-m Sentinel-2 aggregation and endmember workflow are not public |
-| SI Fig. 3 | B | Deciduousness and lag rasters are public | Caption-specific binned analysis and figure gate remain |
-| SI Fig. 4 | C | Basin/subregion masks are public | Dedicated regional histogram workflow remains |
-| SI Fig. 5 | C | EVI and some seasonal inputs are public | kNDVI product and four-panel generation lineage remain |
-| SI Fig. 6 | C | Public lag raster and regional masks | Peak-to-peak calculation workflow remains |
-| SI Fig. 7 | B | XGBoost model code and public driver inputs | Exact pooled 10-fold prediction export is not yet public/gated |
-| SI Fig. 8 | C | Core driver inputs are public | Daytime LST input and sensitivity workflow remain |
-| SI Fig. 9 | B | Driver model inputs and SHAP dependencies are public | Amplitude-stratified model fits and plot remain |
-| SI Fig. 10 | B | GPP products, GOSIF/CSIF inputs and evaluation code | Separate GOSIF and CSIF figure workflow remains |
-| SI Fig. 11 | B | Twelve GPP products and regional masks are public | Signed regional annual-GPP calculation and plot need a public entry point |
-| SI Fig. 12 | C | BRDF EVI is public | MAIAC EVI input and product-comparison workflow remain |
-| SI Fig. 13 | C | BRDF lag inputs are public | MAIAC lag workflow and paired regional comparison remain |
-| SI Fig. 14 | C | No drone/source-image bundle is released | Drone and co-registered Sentinel-2 source data require provenance/permission review |
-| SI Fig. 15 | C | No dynamic endmember archive is released | 76,276-tile endmember data and generation workflow remain |
-| SI Fig. 16 | C | No public K=2 retraining workflow/data | Independent two-endmember retraining must be released before reproduction |
-| SI Fig. 17 | C | No complete shade-treatment validation workflow | Patch-level redistribution analysis remains |
-| SI Fig. 18 | C | Some ATTO phenocam tables are public | Crown tracking images/annotations and figure workflow remain |
-| SI Fig. 19 | C | No spectral reconstruction-error archive is released | Tile-level MSE output and generation workflow remain |
-| SI Fig. 20 | C | No Monte Carlo archive is released | Noise perturbation inputs/seed/output workflow remain |
-| SI Fig. 21 | B | Leaf-age/GPP code and some site observations are public | Site LAI observations and caption-specific plot gate remain |
-| SI Fig. 22 | K | None; conceptual LD-LUE flowchart | Artwork is not a computational workflow |
-| SI Fig. 23 | C | Litterfall/leaf-age products are partly public | Raw litterfall-to-SLA conversion and Eq. 13 plot workflow remain |
-| SI Fig. 24 | B | SIF and EC inputs plus site evaluation code | Caption-specific year-overlap and SIF/EC plot remain |
-| SI Fig. 25 | C | LD-LUE/GPP code exists | Monte Carlo deciduousness uncertainty propagation workflow remains |
-| SI Fig. 26 | C | Eq. 9 source inputs are not released as a public workflow | 10,000 residual-bootstrap implementation/output remains |
-| SI Fig. 27 | C | GPP generators are public | Bootstrap parameters through site GPP workflow remains |
-| SI Fig. 28 | C | GPP generators and evaluation inputs are public | Ten parameterizations and basin uncertainty workflow remains |
-| SI Table 1 | B | Site metadata and public observation files | Full table assembly and field-data licensing remain |
-| SI Table 2 | C | Caption names comparison products | Product metadata/access table and licenses remain |
-| SI Table 3 | B | Eight driver rasters and model code are public | LST sensitivity metadata and final table assembly remain |
-| SI Table 4 | B | GPP generators and parameter summaries are public | Complete formulation table should be generated from a public metadata script |
-| SI Table 5 | B | Parameter summary CSVs are public | MCMC/calibration provenance and uncertainty-generation workflow remain |
+Script paths below are relative to `code/`; input paths are relative to `data/`.
 
-## Current acceptance statement
+| Figure | Entry script | Input data | Outputs | Verification status |
+| --- | --- | --- | --- | --- |
+| Main Fig. 1 | None | Conceptual framework | Illustration | Not a computational workflow |
+| Main Fig. 2 | `figure2_generate_time_lags.py`; `figure2_plot_seasonality.py`; `reproduce_main_figures.py` | Processed deciduousness, EVI, precipitation, forest mask, site coordinates | Lag raster; seasonal curves; amplitude and lag maps; site tables | Executed. Regenerated lag values and georeferencing match the released reference raster. Site means and uncertainties checked against the reference calculation; amplitude color scale and range checked against the reference plotting code. No claim of pixel-identical manuscript artwork |
+| Main Fig. 3 | `figure3_asynchrony_driver_analysis.py`; `figure3_plot_driver_maps.py`; `reproduce_main_text.py` | Processed predictors, deciduousness, time lag, forest mask | Fitted model, SHAP and cross-validation arrays, driver raster, diagnostic plots | Refit executed; driver raster checked against the released reference raster; model summary and driver proportions checked against manuscript targets |
+| Main Fig. 4 | `gpp_ec_lue_experiments.py`; `gpp_mod_lue_experiments.py`; `gpp_two_leaf_ec_lue_experiments.py`; `gpp_evaluate_against_sif.py` | Processed meteorology, vegetation indices, leaf-age inputs, calibrated parameters, SIF and site observations | GPP experiment rasters, ensemble comparisons, site statistics | All 12 regenerated GPP rasters match released references; model and ensemble comparison arrays checked against the reference calculation. Improved-pixel proportion is 79.8537%, matching the manuscript's rounded 79.9% |
+| ED Fig. 2 | `site_phenocam_evaluation.py` | 250 m composite, existing coarse forest mask, Phenocam tables, BCI satellite table | Five-site curves, comparison panel, metrics CSV and JSON | Final default configuration executed. All five site-wise r and RMSE values equal the supplied reference calculation; mean r = 0.9179836 and mean RMSE = 0.03906885. These are observation-guided spatial-matching statistics |
+| ED Fig. 3 | `site_ground_evaluation.py` | Standardized litterfall pairs, site correlations, inventory pairs and GEI tables | Five-panel PNG/PDF, raw inventory fit, confidence bounds, metrics JSON | Executed from processed CSVs. Checked statistics for litterfall, inventory and GEI match the reference calculation. Inventory uses 289 complete records, r = 0.5844362 and residual SD = 0.09216717; fitted-mean confidence bounds also match |
+| ED Fig. 7 | `gpp_evaluate_against_sif.py` | Regenerated GPP experiments and processed SIF references | Per-formulation comparisons and distributions | Executed; numerical comparisons checked against the reference calculation |
+| SI Fig. 7 | `figure3_asynchrony_driver_analysis.py` | Processed driver-model inputs | Cross-validation figure; `cv_response` and `cv_prediction` in `figure3_shap_outputs.npz` | Exports are implemented and were generated during the driver-model run. Aggregate CV metrics checked; a separate element-by-element comparison of pooled predictions with manuscript source predictions has not been recorded |
 
-The public repository currently supports validated regeneration or checking of
-the main Figure 2, main Figure 3, main Figure 4 and Extended Data Figure 7
-workflows from released processed inputs. It does not yet provide complete raw-data
-reproduction for all 47 captioned items. The next additions should target the
-highest-value **B** rows only when their source inputs and licensing can be
-documented; **C** rows must not be represented as reproducible merely because a
-similarly named raster or helper script exists.
+## Other Figure-Specific Analyses
+
+"Not included in this release" refers to the complete figure-specific workflow,
+not necessarily to every underlying input. Related inputs are identified below;
+their sources and access routes are listed in [data provenance](DATA_PROVENANCE.md).
+Methods are described in the corresponding manuscript and Supplementary captions.
+
+| Figure | Entry script | Input data | Outputs | Verification status |
+| --- | --- | --- | --- | --- |
+| ED Fig. 1 | No dedicated entry point | Boundaries and site metadata included | Site overview map | Not included in this release |
+| ED Fig. 4 | No dedicated entry point | Some comparison products included | Cross-product comparison | Not included in this release |
+| ED Fig. 5 | Related: `figure3_asynchrony_driver_analysis.py` | Eight predictor inputs included | SHAP/model plots | Related outputs executed; exact caption-specific panel not separately checked |
+| ED Fig. 6 | Related: driver analysis | Predictors and regional masks included | Regional contributions | Complete figure workflow not included in this release |
+| ED Fig. 8 | Related: GPP generators | Monthly GPP products included | Monthly/site panels | Complete figure workflow not included in this release |
+| ED Fig. 9 | Related: GPP evaluation | GPP, masks and regional geometry included | Ecoregion attribution | Complete figure workflow not included in this release |
+| ED Fig. 10 | Related: GPP experiments | Model products and some site data included | Leaf-age attribution | Complete figure workflow not included in this release |
+| SI Fig. 1 | No dedicated entry point | Deciduousness composites included | Threshold-area analysis | Not included in this release |
+| SI Fig. 2 | Site unmixing example only | Selected Sentinel-2 scenes and composites included | Resolution/endmember comparison | Full figure workflow not included in this release |
+| SI Fig. 3 | No dedicated entry point | Deciduousness and lag included | Binned amplitude-lag analysis | Not included in this release |
+| SI Fig. 4 | No dedicated entry point | Regional masks included | Regional histograms | Not included in this release |
+| SI Fig. 5 | No dedicated entry point | EVI and GPP kNDVI inputs included | Seasonal index comparison | Full figure workflow not included in this release |
+| SI Fig. 6 | No dedicated entry point | Lag and regional inputs included | Peak-to-peak timing | Not included in this release |
+| SI Fig. 8 | No dedicated entry point | Core predictors included; MOD11A2 source linked in provenance | LST sensitivity | Not included in this release |
+| SI Fig. 9 | Related: driver analysis | Predictors and SHAP dependencies included | Amplitude-stratified fits | Complete figure workflow not included in this release |
+| SI Fig. 10 | Related: GPP evaluation | GOSIF and CSIF inputs included | Separate SIF comparisons | Complete figure workflow not included in this release |
+| SI Fig. 11 | Related: GPP experiments | GPP products and regional inputs included | Regional annual GPP | Complete figure workflow not included in this release |
+| SI Fig. 12 | No dedicated entry point | BRDF EVI included; MAIAC source linked in provenance | EVI product comparison | Not included in this release |
+| SI Fig. 13 | No dedicated entry point | BRDF lag inputs included; MAIAC source linked in provenance | Product-specific lag comparisons | Not included in this release |
+| SI Fig. 14 | None | Full drone/source-image collection not supplied | Image comparison | Not included in this release |
+| SI Fig. 15 | Site example only | Full dynamic-endmember archive not supplied | Basin endmember analysis | Not included in this release |
+| SI Fig. 16 | None | K=2 retraining inputs/workflow not supplied | Two-endmember sensitivity | Not included in this release |
+| SI Fig. 17 | None | Complete shade-treatment validation inputs not supplied | Shade reassignment sensitivity | Not included in this release |
+| SI Fig. 18 | No dedicated entry point | Some Phenocam tables included; full crown imagery/annotations not supplied | Crown-tracking validation | Not included in this release |
+| SI Fig. 19 | None | Basin reconstruction-error archive not supplied | Spectral error analysis | Not included in this release |
+| SI Fig. 20 | None | Monte Carlo perturbation archive not supplied | Noise sensitivity | Not included in this release |
+| SI Fig. 21 | Related: leaf-age and GPP scripts | Leaf-age products and some site inputs included | LAI/site comparison | Complete figure workflow not included in this release |
+| SI Fig. 22 | None | Conceptual LD-LUE framework | Illustration | Not a computational workflow |
+| SI Fig. 23 | Related: leaf-age model | Some litterfall/leaf-age inputs included | Litterfall-to-SLA and Eq. 13 analysis | Complete figure workflow not included in this release |
+| SI Fig. 24 | Related: GPP evaluation | SIF and EC inputs included | Matched-year SIF/EC analysis | Complete figure workflow not included in this release |
+| SI Fig. 25 | None | GPP inputs included; perturbation workflow not supplied | Deciduousness uncertainty propagation | Not included in this release |
+| SI Fig. 26 | None | Residual-bootstrap workflow not supplied | Eq. 9 uncertainty | Not included in this release |
+| SI Fig. 27 | Related: GPP generators | Parameter summaries included; bootstrap workflow not supplied | Site parameter uncertainty | Not included in this release |
+| SI Fig. 28 | Related: GPP generators | Baseline inputs included; parameter ensemble not supplied | Basin parameter uncertainty | Not included in this release |
+| SI Table 1 | No table assembly entry point | Some site metadata/observations included | Site summary | Complete table workflow not included in this release |
+| SI Table 2 | No table assembly entry point | Product sources listed in provenance | Product/access summary | Complete table workflow not included in this release |
+| SI Table 3 | No table assembly entry point | Main predictor inputs included | Predictor metadata | Complete table workflow not included in this release |
+| SI Table 4 | GPP formulation scripts | Model definitions and parameter summaries included | Formulation summary | Automated table assembly not included in this release |
+| SI Table 5 | No calibration entry point | Parameter summary CSVs included | Calibration summary | Calibration and uncertainty workflow not included in this release |
+
+## Site-Level Mapping Example
+
+`sentinel2_site_unmixing.py` was executed on the default Testing input for
+2019-2021, producing 87 abundance rasters. GDAL must load before TensorFlow in
+the tested Windows environment. Output grids, finite values and abundance sums
+were checked. The strict abundance-range check did not pass: some values were
+slightly outside [0, 1]. This is an execution test, not an accuracy or
+repeat-training reproducibility test; it does not establish basin-wide mapping
+reproduction.

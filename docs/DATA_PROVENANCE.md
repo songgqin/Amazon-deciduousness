@@ -1,42 +1,39 @@
-# Data provenance and redistribution boundary
+# Data provenance and reuse
 
-The MIT license in the repository applies to original code and documentation
-only. It does not grant rights to research datasets, satellite products, field
-observations, third-party software, or manuscript material. Users must follow
-the provider terms for every input before redistributing a copy or depositing a
-derived archive.
+The MIT License applies to the original software and documentation only. It
+does not license research datasets, satellite products, field observations,
+or third-party software. Reuse of each data product must follow the source
+provider's terms and retain the relevant attribution.
 
-| Repository group | Scientific role | Current provenance status |
-| --- | --- | --- |
-| `data/deciduousness/` | Sentinel-2-derived deciduousness composites | Derived research products; byte-level lineage to the author's processed inputs is recorded, but source-observation redistribution terms are still under audit |
-| `data/seasonality/` | MODIS EVI, annual EVI and lag products | Processed products and derived lag output; provider attribution and derivative-data terms must be retained |
-| `data/climate/`, `data/drivers/inputs/` | ERA5/ERA5-Land and environmental predictors | Mixed third-party products; each product requires its own provider citation and terms check |
-| `data/forest_mask/` | MODIS land-cover forest masks | MODIS-derived; the coarse and native files have distinct workflow roles, documented in `data/forest_mask/README.md` |
-| `data/gpp/` | Model inputs, calibrated parameters, SIF references and released outputs | Mixed derived and third-party data; the MIT code license does not cover these files |
-| `data/leaf_age/` | Leaf-demography and litterfall-derived inputs | Derived research product; raw litterfall and SLA sources still require separate attribution |
-| `data/phenocam/`, `data/validation/`, `data/maintext_release/Ground_Observations/` | Phenocam, eddy-flux and ground validation observations | Site-level observations; permission, citation and any restrictions must be checked before reuse |
-| `data/sentinel2/` | Site/year Sentinel-2 imagery for unmixing | Third-party remote-sensing inputs; upstream licensing and complete source workflow are not yet part of this release |
-| `data/boundaries/` | Basin and regional boundary geometry | Boundary source and redistribution terms should be cited with any map reuse |
+The repository contains processed inputs and derived research products. The
+processing column describes the transformation used by the public workflows;
+it is not a replacement for the original product documentation.
 
-## Reproducibility scope
+| File or data group | Description | Original source | Reference / DOI | Processing in this repository | Availability and reuse |
+| --- | --- | --- | --- | --- | --- |
+| `data/deciduousness/` | Monthly deciduousness composites and annual stacks | Author-generated products derived from satellite observations | See the manuscript and the file-level checksums in the data README | Three-year and annual composites are read by the Figure 2, lag, driver and GPP workflows | Author-generated research data have no separate data licence designated in this release; attribution and repository terms apply |
+| `data/maintext_release/` | Manuscript-facing processed input package, including ground observations and model products | Author-supplied processed inputs plus cited source products | Product-specific sources are listed below | Filenames and relative subdirectories are preserved for the public regeneration scripts | The MIT software licence does not grant data-reuse rights; source-specific terms apply |
+| `data/seasonality/` | BRDF EVI, seasonal EVI and timing inputs | MODIS MCD43A1 Version 6.1, accessed through Google Earth Engine | [MCD43A1 V061](https://developers.google.com/earth-engine/datasets/catalog/MODIS_061_MCD43A1) | MODIS observations were aggregated to the supplied seasonal and multi-year products used by the seasonality workflows | Follow NASA/LP DAAC and Google Earth Engine dataset terms and attribution |
+| MAIAC EVI comparison inputs | MAIAC EVI product used for product comparison in the study | NASA MAIAC MCD19A3CMG Version 6.1 | [MCD19A3CMG V061](https://www.earthdata.nasa.gov/data/catalog/lpcloud-mcd19a3cmg-061) | Product-specific comparison inputs are treated as upstream/source data | Follow NASA Earthdata and LP DAAC terms; this entry is a source route, not a blanket redistribution grant |
+| `data/climate/` and `data/drivers/inputs/` | Precipitation, radiation, soil and herbivory predictors | ERA5-Land; TPDC soil moisture; SoilGrids texture; PANGAEA soil-fertility/exchangeable-cation data; Zenodo herbivory data | [ERA5-Land](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-land?tab=download); [TPDC soil moisture](https://data.tpdc.ac.cn/en/data/bc51e1b0-494c-4cd5-ae4d-eba6b9d2322c); [SoilGrids](https://soilgrids.org/); [PANGAEA](https://doi.org/10.1594/PANGAEA.879542); [herbivory dataset](https://zenodo.org/records/11047796) | Source layers were clipped, resampled or combined into predictor rasters consumed by the driver models | Each product retains its own provider terms and citation; derived rasters do not change those terms |
+| `data/forest_mask/` | Coarse and native Amazon forest masks | MODIS MCD12Q1 Version 6.1 | [MCD12Q1 V061](https://www.earthdata.nasa.gov/data/catalog/lpcloud-mcd12q1-061); [LP DAAC product page](https://lpdaac.usgs.gov/products/mcd12q1v006/) | Class-based masks were prepared for the spatial supports of the released workflows; see the forest-mask README | Follow NASA/LP DAAC terms and cite the product; the two files have distinct workflow roles |
+| MCD12C1 and `MOD11A2` source products | Land-cover context and daytime land-surface temperature used by manuscript comparisons | MODIS MCD12C1 Version 6.1 and MOD11A2 Version 6.1 | [MCD12C1 V061](https://www.earthdata.nasa.gov/data/catalog/lpcloud-mcd12c1-061); [MOD11A2 V061](https://www.earthdata.nasa.gov/data/catalog/lpcloud-mod11a2-061) | Product-specific comparison or sensitivity inputs are documented where an entry script is available | Follow NASA/LP DAAC terms; a linked source product is not necessarily copied into this release |
+| `data/sentinel2/` | Site-level Sentinel-2 inputs for the deciduousness-mapping example | Copernicus Sentinel-2 Surface Reflectance Harmonized collection on Google Earth Engine | [COPERNICUS/S2 SR Harmonized](https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR_HARMONIZED) | Selected site/year scenes are prepared for the supplied unmixing example | Follow Copernicus, Google Earth Engine and any repository-specific access terms |
+| `data/validation/ground/` and `data/maintext_release/Ground_Observations/` | Processed litterfall, inventory, eddy-flux and ground-validation tables | Litterfall sources in ref. 71 and directly supplied data associated with ref. 72; NASA flux archive; author-provided validation tables | Janssen et al. 2021, [Biogeosciences 18, 4445](https://bg.copernicus.org/articles/18/4445/2021/) and [DataverseNL dataset](https://doi.org/10.34894/LY77IN); Zhang et al. 2014, [DOI 10.1016/j.ecocom.2014.01.003](https://doi.org/10.1016/j.ecocom.2014.01.003); [ORNL DAAC Brazil fluxes](https://www.earthdata.nasa.gov/data/catalog/ornl-cloud-cd32-fluxes-brazil-1842-2) | The repository tables are standardized paired data and site statistics used for validation, not a complete republication of the original litterfall compilation | Original-source attribution and any author-provided sharing conditions remain applicable; inclusion of a processed table does not imply unrestricted reuse |
+| `data/phenocam/` | Phenocam image-derived crown-level leaf-status validation data | Phenocam imagery and records described in ref. 28 | See ref. 28 and the processed validation files in this repository | Site observations are matched to the 250 m composite using the public validation script | This release contains processed validation data, not a general redistribution of the original image archive; source terms and attribution apply |
+| `data/boundaries/` | Amazon basin and three-region polygon used for clipping and summaries | Polygon supplied by the authors of ref. 37; the related reproduction capsule is available from Code Ocean | Chen et al. 2024, [Nature 631, 111–117](https://doi.org/10.1038/s41586-024-07568-w); [Code Ocean capsule](https://codeocean.com/capsule/2432086/tree) | The repository contains the clipped/processed boundary files used by the public workflows | The source remains attributed to the original authors; reuse follows the source terms for the supplied geometry |
+| `data/gpp/` and `data/leaf_age/` | Calibrated parameters, leaf-age inputs and GPP reference/derived products | Author-generated model products combined with cited SIF, LAI and litterfall inputs | [MOD15A2H V006](https://www.earthdata.nasa.gov/data/catalog/lpcloud-mod15a2h-006); [GOSIF v2](https://globalecology.unh.edu/data/GOSIF.html); [CSIF](https://doi.org/10.1188/Ecolo.tpdc.271751); [VODCA v2.0](https://doi.org/10.48436/t74ty-tcx62) | Products are read by the released leaf-age and GPP experiments and evaluation scripts | Author-generated products have no separate data licence designated in this release; third-party inputs retain their source terms |
+| Additional comparison sources | Vegetation continuous fields, plant traits, BIEN, sPlotOpen and Google Earth validation imagery | MOD44B, TRY, BIEN, sPlotOpen and Google Earth | [MOD44B V061](https://www.earthdata.nasa.gov/data/catalog/lpcloud-mod44b-061); [TRY](https://www.try-db.org/TryWeb/Database.php); [BIEN R package](https://cran.r-project.org/package=BIEN); [sPlotOpen](https://idata.idiv.de/ddm/Data/ShowData/3474); [Google Earth](https://earth.google.com/) | These sources support manuscript comparisons or validation described in the study; only the processed files present in `data/` are part of this release | Access, citation and redistribution follow the respective provider or database terms |
 
-The validated main-figure commands begin from the processed rasters, calibrated
-parameter tables and leaf-age products included in this repository. They do not
-rerun satellite calibration, dynamic endmember extraction, field-image
-annotation, upstream Sentinel-2 unmixing, or raw observation ingestion. The
-public release therefore supports processed-input regeneration for the covered
-workflows, not full raw-observation reproduction.
+## Data availability boundaries
 
-Before a formal archive or DOI release, complete these checks:
+The public workflows start from the processed files supplied in `data/` and
+are designed to reproduce the covered analyses and validation figures. They do
+not recreate every upstream satellite retrieval, dynamic endmember archive,
+field-image annotation, or raw-observation ingestion step. A source link in
+this document identifies the authoritative access route; it does not imply
+that the complete upstream product is redistributed in this repository.
 
-1. Record the authoritative provider/product citation and license or terms URL
-   for every third-party file group.
-2. Confirm that field observations, high-resolution imagery and derived files
-   may be redistributed in the selected repository.
-3. Add per-file or per-group checksums and acquisition/version dates without
-   exposing workstation paths.
-4. Preserve the distinction between original code under MIT and data under
-   provider-specific terms.
-
-No `Materials_for_mainfigure` files, Word documents, reference figures, or
-private source-code bundles are part of this repository.
+For the exact role of similarly named deciduousness composites and forest
+masks, see [deciduousness inputs](../data/deciduousness/README.md) and
+[forest-mask versions](../data/forest_mask/README.md).

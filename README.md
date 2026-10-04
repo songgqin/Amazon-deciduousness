@@ -17,11 +17,6 @@ The analyses address three connected questions:
 - Which environmental predictors are associated with the seasonal asynchrony between deciduousness and vegetation greenness?
 - How does representing leaf-age dynamics affect modeled productivity and its agreement with observations?
 
-The principal workflows use released processed inputs. Regenerating results
-from these inputs is distinct from reconstructing the entire study from raw
-satellite imagery and field observations. The reproduction scope is described
-below.
-
 ## Repository Organization
 
 | Location | Contents |
@@ -84,8 +79,7 @@ deciduousness mapping.
 
 `code/sentinel2_site_unmixing.py` implements the IG-ECAE site-level unmixing
 workflow. It uses the supplied Sentinel-2 inputs and associated helper modules.
-This entry point is separate from the main-figure regeneration workflow and
-should not be interpreted as a complete basin-wide raw-imagery processing chain.
+Outputs include estimated endmember spectra and per-scene abundance rasters.
 
 ### Seasonality and Phenological Asynchrony
 
@@ -117,9 +111,7 @@ Figure 3. These analyses describe predictive associations, not causal effects.
 of leaf age in productivity models.
 
 `code/gpp_leaf_age_demography_model.py` estimates leaf-age dynamics from
-deciduousness and leaf area index inputs. Released leaf-age products are used
-by the main-figure GPP experiments; the unified regeneration command does not
-rerun this upstream model.
+deciduousness and leaf area index inputs. The resulting leaf-age products provide inputs to the GPP experiments.
 
 ### Productivity Experiments
 
@@ -161,9 +153,8 @@ python code/site_phenocam_evaluation.py --output-dir outputs/phenocam
 and complementary site-level measurements.
 
 `code/site_ground_evaluation.py` contains the ground-validation analyses and
-associated figures. The availability of this script does not imply that all
-Extended Data and Supplementary validation panels have been independently
-reproduced; consult the coverage documentation for their status.
+associated figures. The outputs combine litterfall seasonality, forest-inventory comparisons,
+patch-level agreement, and site-level summary distributions.
 
 ## Reproducing the Main Results
 
@@ -189,11 +180,6 @@ The regeneration workflow compares derived rasters with the released results
 and records its checks in `reproduction_report.json`. Figure 2's standalone
 three-plot export and Phenocam validation have separate commands above.
 
-This workflow starts from processed rasters, calibrated parameters, and
-leaf-age products. It does not rerun upstream satellite retrieval, basin-wide
-unmixing, parameter calibration, or every Supplementary analysis. Figure 1
-is a conceptual illustration rather than a computational output.
-
 ## Outputs and Reproduction Scope
 
 Generated figures, rasters, tables, and reports are written locally under
@@ -204,9 +190,20 @@ Use a new output directory for each run to preserve previous results. Keep
 generated files separate from the released inputs; do not replace `data/`
 products with new runs.
 
-The repository supports selected main-figure and validation workflows, not a
-complete raw-observation reconstruction of all manuscript results. For the
-current figure-by-figure scope and data context, see:
+## Scope of This Release
+
+This repository provides code and processed inputs for reproducing the main
+analyses and selected validation figures. A site-level Sentinel-2 example is
+also included to demonstrate the deciduousness-mapping method. The main
+analysis workflows start from the supplied processed data.
+
+Upstream satellite processing, basin-wide unmixing, parameter calibration,
+and Supplementary analyses without an entry point in the workflow list are
+not included in this release. Figure 1 is a conceptual illustration.
+Execution, numerical comparison, and manuscript-statistic checks are reported
+separately in the workflow list.
+
+For figure-specific verification and data provenance, see:
 
 - [Figure workflow coverage](docs/FIGURE_WORKFLOW_COVERAGE.md)
 - [Data provenance and reuse boundaries](docs/DATA_PROVENANCE.md)
@@ -218,6 +215,9 @@ Original code and associated software documentation are released under the
 [MIT License](LICENSE). Retain the copyright and license notice when reusing
 or redistributing the software.
 
-The MIT license covers the original software and its documentation only.
-Research datasets and third-party materials are subject to their respective
-licenses and attribution requirements.
+The MIT license covers original software and its documentation only.
+Author-generated research products have no separate data license designated
+in this release; no data-reuse rights are granted through the software license.
+Third-party data and adapted code retain their source terms and attribution.
+See [data provenance and reuse](docs/DATA_PROVENANCE.md) for product-specific
+sources and the permission information still required from the authors.
