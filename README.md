@@ -109,13 +109,12 @@ upstream processing, and data permissions remain under review. See the
 [figure coverage summary](docs/FIGURE_WORKFLOW_COVERAGE.md) and
 [data provenance notes](docs/DATA_PROVENANCE.md) for the current scope.
 
-## License and Citation
+## License
 
 Original code and software documentation are available under the
 [MIT License](LICENSE). This license does not cover research datasets or
 third-party code; their respective permissions and attribution requirements
 apply. Data reuse terms remain under review.
 
-Citation metadata are provided in [CITATION.cff](CITATION.cff).
 
 
