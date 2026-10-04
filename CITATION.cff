@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite the repository and the associated Nature manuscript."
 type: software
-title: "Amazon Forest Deciduousness and Phenology"
+title: "Sample code for Widespread deciduousness reveals diverse Amazonian phenological strategies"
 abstract: "Research software and processed inputs for mapping Amazon forest deciduousness, characterizing phenological seasonality, evaluating environmental drivers, and testing leaf-age effects on gross primary productivity."
 authors:
   - family-names: Song
@@ -19,7 +19,7 @@ keywords:
   - reproducibility
 preferred-citation:
   type: software
-  title: "Amazon Forest Deciduousness and Phenology"
+  title: "Sample code for Widespread deciduousness reveals diverse Amazonian phenological strategies"
   authors:
     - family-names: Song
       given-names: Guangqin
