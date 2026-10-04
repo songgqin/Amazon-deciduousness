@@ -68,26 +68,34 @@ require platform-specific dependency adjustments. `requirements.txt` lists
 dependencies across the codebase; it is not a substitute for the tested
 `environment.yml` configuration.
 
-Figure 3 model refitting requires an NVIDIA GPU and the validated CUDA-enabled
-XGBoost build. Check the installation before starting the model run:
+Figure 3 model refitting uses XGBoost 3.0.4. A CUDA-capable XGBoost build
+and NVIDIA GPU accelerate training, but they are not required: the public
+script also supports a slower CPU path with `--device cpu`. Use `--device
+cuda` to request GPU execution, or leave the default `--device auto` to
+select CUDA when the build and driver are available and otherwise use CPU.
+The checks below are optional for CPU-only runs.
 
 ```bash
 python -c "import xgboost as xgb; print('xgboost', xgb.__version__); print(xgb.build_info())"
 ```
 
-The expected version is `3.0.4`, with a CUDA-enabled build. Then run this
-small GPU smoke test:
+The expected version is `3.0.4`. If GPU acceleration is desired, the build
+information should also report CUDA support. Then run this small GPU smoke test:
 
 ```bash
 python -c "import numpy as np, xgboost as xgb; X=np.array([[0.],[1.]], dtype=np.float32); y=np.array([0,1]); m=xgb.XGBClassifier(n_estimators=1, max_depth=1, tree_method='hist', device='cuda'); m.fit(X,y); print('CUDA XGBoost OK')"
 ```
 
 If the version is not `3.0.4`, `build_info()` does not report CUDA support,
-or the smoke test reports that CUDA is unavailable, do not start the Figure 3
-refit. Recreate the supplied Conda environment and confirm that the NVIDIA
-driver is visible to Python. Saved-product checks and the Figure 3 map-only
-workflow do not require refitting the model. Large raster analyses also
-require sufficient memory and disk space.
+or the smoke test reports that CUDA is unavailable, use the CPU path instead:
+
+```bash
+python code/figure3_asynchrony_driver_analysis.py --device cpu --output-dir outputs/figure3_model_cpu
+```
+
+Use `--device cuda` only after the GPU smoke test succeeds. Saved-product
+checks and the Figure 3 map-only workflow do not require refitting the model.
+Large raster analyses also require sufficient memory and disk space.
 
 Run the commands below from the repository root. For PyCharm, select the newly
 created Conda environment as the project interpreter and use the repository
@@ -131,8 +139,9 @@ is `reproduce_main_text.py`. These analyses describe predictive associations,
 not causal effects.
 
 Run the model refit and the manuscript map export as separate steps. The refit
-requires the CUDA check above; the map export uses the released or newly
-generated driver raster and does not refit XGBoost:
+uses the GPU when available by default; use `--device cpu` for CPU-only
+execution. The map export uses the released or newly generated driver raster
+and does not refit XGBoost:
 
 ```bash
 # Step 1: refit XGBoost and export the driver raster and SHAP/CV products.
@@ -142,6 +151,10 @@ python code/figure3_asynchrony_driver_analysis.py --output-dir outputs/figure3_m
 # Step 2: plot/check the Figure 3 driver map. Use a new output directory.
 python -c "from pathlib import Path; import sys; sys.path.insert(0, 'code'); from reproduce_main_figures import figure3_map; print(figure3_map(strict=True, output_dir=Path('outputs/figure3_map_run'), driver_path=Path('outputs/figure3_model_run/asynchrony_driver_map_3type.tif')))"
 ```
+
+To force the validated GPU path, add `--device cuda` to Step 1. For CPU-only
+execution, use `--device cpu` and a new output directory, for example
+`outputs/figure3_model_cpu`.
 
 The refit directory contains `figure3_metrics.json`, `figure3_model.ubj`,
 `figure3_shap_outputs.npz`, `asynchrony_driver_map_3type.tif`, and diagnostic
