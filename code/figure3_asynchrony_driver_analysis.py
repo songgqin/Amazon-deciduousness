@@ -2,6 +2,9 @@
 
 Requires XGBoost 3.0.4. CUDA accelerates training; ``--device cpu`` provides a
 slower CPU path when a CUDA-capable installation or GPU is unavailable.
+The CPU path is an execution fallback. The validated manuscript reference was
+generated with the tested XGBoost configuration; CPU and GPU runs may differ
+slightly because of numerical and parallelization differences.
 Each run is written to ``outputs/drivers/figure3_reproduction`` or to the
 directory supplied with ``--output-dir``; the released raster is never
 overwritten automatically. Numerical manuscript gates run before the new

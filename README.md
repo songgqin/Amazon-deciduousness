@@ -97,6 +97,10 @@ Use `--device cuda` only after the GPU smoke test succeeds. Saved-product
 checks and the Figure 3 map-only workflow do not require refitting the model.
 Large raster analyses also require sufficient memory and disk space.
 
+The CPU path is an execution fallback. The validated manuscript reference was
+generated with the tested XGBoost configuration; CPU and GPU runs may differ
+slightly because of numerical and parallelization differences.
+
 Run the commands below from the repository root. For PyCharm, select the newly
 created Conda environment as the project interpreter and use the repository
 root as the working directory.
@@ -319,3 +323,5 @@ in this release; no data-reuse rights are granted through the software license.
 Third-party data and adapted code retain their source terms and attribution.
 See [data provenance and reuse](docs/DATA_PROVENANCE.md) for product-specific
 sources and the permission information still required from the authors.
+
+Software citation metadata are provided in [`CITATION.cff`](CITATION.cff).
