@@ -17,3 +17,11 @@ keywords:
   - remote sensing
   - gross primary productivity
   - reproducibility
+preferred-citation:
+  type: software
+  title: "Amazon Forest Deciduousness and Phenology"
+  authors:
+    - family-names: Song
+      given-names: Guangqin
+  version: "1.0.0"
+  year: 2026
