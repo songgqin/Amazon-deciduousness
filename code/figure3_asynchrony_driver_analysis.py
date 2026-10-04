@@ -581,18 +581,6 @@ if np.sum(class_importance) != 1:
     index_max = np.argmax(class_importance)
     class_importance[index_max] = 1 - np.sum(class_importance) + class_importance[index_max]
 
-Full_feature_map = copy.deepcopy(amazon_features)
-
-five_types = [type1, type2, type3, type4]
-
-dominant_map = np.zeros((width_x, height_y)) * np.nan
-
-for id in np.arange(len(five_types)):
-    ind_list = five_types[id]
-    for ind in ind_list:
-        ind_x, ind_y = np.where(Full_feature_map == ind)
-        dominant_map[ind_x, ind_y] = id
-
 color_list = [
     'tab:orange',
     'tab:brown',

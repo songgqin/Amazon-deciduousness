@@ -390,54 +390,6 @@ os.makedirs(r'outputs/figures', exist_ok=True)
 fig.savefig(r'outputs/figures/Fig3_Driver_Map.png', dpi=300, bbox_inches='tight')
 plt.show()
 
-color_list = [
-    'tab:orange',
-    'tab:blue',
-    'lightgray',
-
-    'tab:brown',
-]
-custom_cmap = mcolors.ListedColormap(color_list)
-
-feature_name = ['Light', 'Hydroclimate', 'Soil', 'Herbivory', ]
-
-fig = plt.figure(dpi=300)
-
-left, bottom, width, height = 0, 0.08, 0.98, 0.84
-
-proj = ccrs.PlateCarree()
-ax = fig.add_axes([left, bottom, width, height], projection=proj)
-
-ax.add_feature(cfeature.LAND, facecolor='white', zorder=1)
-ax.add_feature(cfeature.OCEAN, zorder=2)
-
-add_shp(ax, lw=0.5, ec='k', fc='none', zorder=3)
-
-plt.imshow(dominant, origin='upper', cmap=custom_cmap,
-           extent=[-79.77497863776252, -44.516103736085974, -20.521922834169924, 8.628408135496414],
-           transform=ccrs.PlateCarree(), zorder=2)
-
-patches = [mpatches.Patch(color=color_list[i], label="{l}".format(l=feature_name[i])) for i in range(len(feature_name))]
-
-plt.legend(handles=patches, bbox_to_anchor=(0.99, 0.20), borderaxespad=0.05, facecolor='white', framealpha=1,
-           fontsize=8)
-
-extents = [-80, -44, -22, 10]
-ax.set_extent(extents, crs=proj)
-
-ax.set_xticks(np.arange(-80, -40, 10), crs=proj)
-ax.set_yticks(np.arange(-20, 10 + 10, 10), crs=proj)
-
-ax.xaxis.set_major_formatter(LongitudeFormatter())
-ax.yaxis.set_major_formatter(LatitudeFormatter())
-
-ax.tick_params(axis='both', labelsize=10, direction='out', colors='k', length=3, width=0.9, which='major',
-               left=True, right=False, top=True, bottom=False,
-               labelleft=True, labelright=False, labeltop=True, labelbottom=False, zorder=10)
-
-save_path = r'outputs/figures/Dominant_asynchrony_herbivory_four_class.png'
-fig.savefig(save_path, dpi=300, bbox_inches='tight')
-
 from shapely.wkt import loads as load_wkt
 import rasterio
 import rasterio.mask
@@ -456,29 +408,6 @@ shp_polygon = [load_wkt(polygon) for polygon in polygons]
 
 feature_name = ['PAR', 'Hydroclimate', 'Soil', 'Vegetation', 'VPD', ]
 feature_name = ['PAR', 'Hydroclimate', 'Soil']
-
-dominant_path = r'data/drivers/dominant_driver_map.tif'
-
-reduce_rmse = [8.4]
-corresponding_gpp = [2.1]
-
-with rasterio.open(dominant_path) as src:
-    for i, polygon in enumerate(shp_polygon):
-
-        out_image, out_transform = rasterio.mask.mask(src, [polygon], crop=True)
-        out_image = out_image[0]
-        out_image = out_image.astype(np.float32)
-        out_image_res = out_image[~np.isnan(out_image)]
-
-        unique, counts = np.unique(out_image_res, return_counts=True)
-        counts_pro = counts / np.sum(counts)
-
-        print(polygons_name[i], 'Herbivory classes:', np.round(counts_pro, 3))
-
-dominant_res = dominant[~np.isnan(dominant)]
-unique, counts = np.unique(dominant_res, return_counts=True)
-counts_pro = counts / np.sum(counts)
-print('Proportion of the area by herbivory class:', np.round(counts_pro, 3))
 
 dominant_path = r'data/drivers/asynchrony_driver_map_3type.tif'
 
