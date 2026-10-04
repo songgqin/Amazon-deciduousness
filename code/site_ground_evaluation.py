@@ -4,10 +4,14 @@
 
 # In[] Imports
 import os
+import argparse
+import json
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
 import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import mean_squared_error
@@ -15,9 +19,16 @@ from sklearn.metrics import mean_squared_error
 # In[] Workflow
 matplotlib.use("Agg")
 
-Data_Dir = r'data/validation/ground'
-Figure_Dir = r'outputs/figures'
-os.makedirs(Figure_Dir, exist_ok=True)
+ROOT = Path(__file__).resolve().parents[1]
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--output-dir", type=Path, default=ROOT / "outputs/ground_validation")
+args = parser.parse_args()
+Data_Dir = ROOT / "data/validation/ground"
+Figure_Dir = args.output_dir.resolve()
+if Figure_Dir == ROOT / "data" or ROOT / "data" in Figure_Dir.parents:
+    raise ValueError("Outputs must not be written inside data/")
+if Figure_Dir.exists():
+    raise FileExistsError("Choose a new --output-dir to preserve existing results")
 
 PATH_LITTERFALL_POOL = os.path.join(Data_Dir, 'Litterfall_global_pool_Zscore.csv')
 PATH_LITTERFALL_SITE = os.path.join(Data_Dir, 'Litterfall_site_r_values.csv')
@@ -124,6 +135,16 @@ def plot_nature_boxplot(ax, data, color, xlabel, title, ylabel):
     ax.set_ylabel(ylabel, labelpad=3)
     ax.set_title(title, fontweight='bold', pad=6)
 
+def format_p(p):
+    if not np.isfinite(p):
+        return "$p$ = NA"
+    if p <= 0:
+        return "$p$ < 10$^{-308}$"
+    exponent = int(np.floor(np.log10(p)))
+    coefficient = p / (10.0 ** exponent)
+    return rf'$p$ = {coefficient:.2f} $\times$ 10$^{{{exponent}}}$'
+
+
 fig = plt.figure(figsize=(7.2, 5.6), dpi=300)
 
 outer = fig.add_gridspec(
@@ -180,7 +201,7 @@ formula_a = (
 
 ax_a.text(
     0.04, 0.94,
-    f"{formula_a}\n$r$ = {r_value_a:.2f}\nRMSE = {rmse_a:.2f}\n$p$ < 0.001",
+    f"{formula_a}\n$r$ = {r_value_a:.2f}\nRMSE = {rmse_a:.2f}\n{format_p(p_value_a)}",
     transform=ax_a.transAxes,
     fontsize=7.2,
     va='top',
@@ -210,6 +231,7 @@ sns.boxplot(
     medianprops={'color': '#A50F15', 'linewidth': 1.2}
 )
 
+np.random.seed(42)
 sns.stripplot(
     y=df_litterfall_site['R_Value'],
     ax=ax_inset,
@@ -238,183 +260,81 @@ df_plots_clean = df_plots.dropna(
 x_col = 'Deciduous_Proportion'
 y_col = 'Sat_Dec_Median'
 
-bins = np.arange(0, 0.85, 0.05)
+x = df_plots_clean[x_col].to_numpy(dtype=float)
+y = df_plots_clean[y_col].to_numpy(dtype=float)
 
-df_plots_clean['Bin_Range'] = pd.cut(
-    df_plots_clean[x_col],
-    bins=bins,
-    include_lowest=True
+slope_b, intercept_b, r_value_b, p_value_b, _ = stats.linregress(x, y)
+y_pred_b = slope_b * x + intercept_b
+residual_sd_b = np.sqrt(np.sum((y - y_pred_b) ** 2) / (len(x) - 2))
+
+x_fit_b = np.linspace(x.min(), x.max(), 300)
+y_fit_b = slope_b * x_fit_b + intercept_b
+x_mean_b = np.mean(x)
+Sxx_b = np.sum((x - x_mean_b) ** 2)
+t_crit_b = stats.t.ppf(0.975, df=len(x) - 2)
+se_mean_b = residual_sd_b * np.sqrt(
+    1 / len(x) + (x_fit_b - x_mean_b) ** 2 / Sxx_b
 )
+confidence_lower_b = y_fit_b - t_crit_b * se_mean_b
+confidence_upper_b = y_fit_b + t_crit_b * se_mean_b
 
-binned_stats = (
-    df_plots_clean
-    .groupby('Bin_Range', observed=False)
-    .agg(
-        x_mean=(x_col, 'mean'),
-        y_mean=(y_col, 'mean'),
-        y_std=(y_col, 'std'),
-        count=(y_col, 'count')
-    )
-    .dropna(subset=['x_mean', 'y_mean'])
+plot_min_b = min(-0.05, x.min() - 0.02, y.min() - 0.02)
+plot_max_b = max(x.max() + 0.02, y.max() + 0.02)
+plot_min_b = np.floor(plot_min_b * 20) / 20
+plot_max_b = np.ceil(plot_max_b * 20) / 20
+
+confidence_band_b = ax_b.fill_between(
+    x_fit_b, confidence_lower_b, confidence_upper_b,
+    color='#A50F15', alpha=0.16, linewidth=0, zorder=1,
+    label='95% confidence interval'
 )
-
-binned_stats['y_std'] = binned_stats['y_std'].fillna(0)
-
-ax_b.scatter(
-    df_plots_clean[x_col],
-    df_plots_clean[y_col],
-    color='0.55',
-    edgecolor='black',
-    linewidth=0.25,
-    alpha=0.28,
-    s=14,
-    rasterized=True,
-    zorder=1
+axis_reference_b = np.array([plot_min_b, plot_max_b])
+one_to_one_b, = ax_b.plot(
+    axis_reference_b, axis_reference_b,
+    linestyle='--', color='0.40', linewidth=0.9,
+    alpha=0.60, zorder=0, label='1:1 line'
 )
-
-ax_b.errorbar(
-    binned_stats['x_mean'],
-    binned_stats['y_mean'],
-    yerr=binned_stats['y_std'],
-    fmt='none',
-    ecolor='0.35',
-    elinewidth=0.8,
-    capsize=2,
-    capthick=0.8,
-    alpha=0.75,
-    zorder=3
+raw_points_b = ax_b.scatter(
+    x, y, color='0.55', edgecolor='black',
+    linewidth=0.25, alpha=0.38, s=14,
+    rasterized=True, zorder=3, label='Raw plot data'
 )
-
-bubble_size = 20 + 70 * np.sqrt(
-    binned_stats['count'] / binned_stats['count'].max()
+linear_fit_b, = ax_b.plot(
+    x_fit_b, y_fit_b, color='#A50F15', linewidth=1.8,
+    zorder=4, label='Raw linear fit'
 )
-
-ax_b.scatter(
-    binned_stats['x_mean'],
-    binned_stats['y_mean'],
-    s=bubble_size,
-    color='#1F77B4',
-    edgecolor='black',
-    linewidth=0.7,
-    zorder=4
-)
-
-range_b = (-0.05, 0.80)
-
-ax_b.plot(
-    range_b,
-    range_b,
-    linestyle='--',
-    color='0.25',
-    linewidth=0.9,
-    alpha=0.75,
-    zorder=2
-)
-
-slope_b, intercept_b, r_value_b, p_value_b, _ = stats.linregress(
-    binned_stats['x_mean'],
-    binned_stats['y_mean']
-)
-
-xline_b = np.linspace(range_b[0], range_b[1], 200)
-
-ax_b.plot(
-    xline_b,
-    slope_b * xline_b + intercept_b,
-    color='#A50F15',
-    linewidth=1.8,
-    zorder=5
-)
-
-raw_r, raw_p = stats.pearsonr(
-    df_plots_clean[x_col],
-    df_plots_clean[y_col]
-)
-
-rmse_b = np.sqrt(
-    mean_squared_error(
-        binned_stats['x_mean'],
-        binned_stats['y_mean']
-    )
-)
-
+sign_b = '+' if intercept_b >= 0 else '-'
 stats_text_b = (
-    f"Raw plot data:\n"
-    f"$r$ = {raw_r:.2f} ($p$ < 0.001)\n\n"
-    f"Binned fit:\n"
-    f"$y$ = {slope_b:.2f}$x$ {'+' if intercept_b >= 0 else '-'} {abs(intercept_b):.2f}\n"
-    f"$r$ = {r_value_b:.2f}\n"
-    f"RMSE = {rmse_b:.2f}"
+    f'$y$ = {slope_b:.2f}$x$ {sign_b} {abs(intercept_b):.2f}\n'
+    f'$r$ = {r_value_b:.2f}\n'
+    f'Residual s.d. = {residual_sd_b:.3f}\n'
+    f'{format_p(p_value_b)}'
 )
-
 ax_b.text(
-    0.04, 0.94,
-    stats_text_b,
-    transform=ax_b.transAxes,
-    fontsize=7.1,
-    va='top',
-    ha='left',
-    linespacing=1.08,
-    bbox=box_props
+    0.04, 0.95, stats_text_b, transform=ax_b.transAxes,
+    fontsize=7.1, va='top', ha='left',
+    linespacing=1.10, bbox=box_props, zorder=5
 )
-
-ax_b.set_xlim(range_b)
-ax_b.set_ylim(range_b)
-
-ax_b.set_xticks(np.arange(0, 0.85, 0.20))
-ax_b.set_yticks(np.arange(0, 0.85, 0.20))
-
+ax_b.set_xlim(plot_min_b, plot_max_b)
+ax_b.set_ylim(plot_min_b, plot_max_b)
+ax_b.set_aspect('equal', adjustable='box')
+ticks_b = np.arange(
+    max(0, np.ceil(plot_min_b / 0.2) * 0.2),
+    np.floor(plot_max_b / 0.2) * 0.2 + 0.001, 0.20
+)
+ax_b.set_xticks(ticks_b)
+ax_b.set_yticks(ticks_b)
 ax_b.set_xlabel('Ground-derived deciduous species proportion', labelpad=2)
-ax_b.set_ylabel('Satellite-derived \n deciduousness amplitude', labelpad=3)
-
-legend_handles = [
-    Line2D(
-        [0], [0],
-        marker='o',
-        color='none',
-        markerfacecolor='0.65',
-        markeredgecolor='0.25',
-        markeredgewidth=0.4,
-        markersize=4.5,
-        alpha=0.6,
-        label='Raw plot data'
-    ),
-    Line2D(
-        [0], [0],
-        marker='o',
-        color='none',
-        markerfacecolor='#1F77B4',
-        markeredgecolor='black',
-        markeredgewidth=0.7,
-        markersize=5.5,
-        label='Binned mean (+/- 1 s.d.)'
-    ),
-    Line2D(
-        [0], [0],
-        color='0.25',
-        linestyle='--',
-        linewidth=0.9,
-        label='1:1 line'
-    ),
-    Line2D(
-        [0], [0],
-        color='red',
-        linewidth=1.5,
-        label='Binned linear fit'
-    )
-]
-
+ax_b.set_ylabel('Satellite-derived \ndeciduousness amplitude', labelpad=3)
+ax_b.grid(True, linestyle=':', color='0.85', linewidth=0.6, zorder=0)
 ax_b.legend(
-    handles=legend_handles,
-    loc='lower right',
-    frameon=True,
-    fontsize=6.2,
-    handlelength=1.8,
-    borderpad=0.35,
-    labelspacing=0.25,
-    framealpha=0.90,
-    edgecolor='0.85'
+    [raw_points_b, linear_fit_b, confidence_band_b, one_to_one_b],
+    ['Raw plot data', 'Raw linear fit', '95% confidence interval', '1:1 line'],
+    loc='lower right', frameon=True, fontsize=6.2, handlelength=1.8,
+    borderpad=0.35, labelspacing=0.25, framealpha=0.90, edgecolor='0.85'
 )
+ax_b.spines['top'].set_visible(False)
+ax_b.spines['right'].set_visible(False)
 
 COLOR_SCATTER = '#0072B2'
 COLOR_R_BOX = '#2A9D8F'
@@ -474,7 +394,7 @@ plot_nature_boxplot(
     data=df_gei_site['r_value'],
     color=COLOR_R_BOX,
     xlabel='$r$',
-    title='GEI specific $r$',
+    title='GEI-specific $r$',
     ylabel='$r$'
 )
 
@@ -487,7 +407,7 @@ plot_nature_boxplot(
     data=df_gei_site['rmse_value'],
     color=COLOR_RMSE_BOX,
     xlabel='RMSE',
-    title=' GEI specific RMSE',
+    title=' GEI-specific RMSE',
     ylabel='RMSE'
 )
 
@@ -505,11 +425,29 @@ fig.subplots_adjust(
     top=0.93
 )
 
-plt.savefig(
-    os.path.join(Figure_Dir, 'Extended_Data_Fig3_Combined_Final.png'),
-    dpi=600,
-    bbox_inches='tight',
-    pad_inches=0.03
-)
-
-plt.show()
+Figure_Dir.mkdir(parents=True)
+for extension in ("png", "pdf"):
+    fig.savefig(Figure_Dir / f"Extended_Data_Fig3_Combined_Final.{extension}",
+                dpi=600, bbox_inches='tight', pad_inches=0.03)
+pd.DataFrame({
+    "ground_proportion": x, "satellite_amplitude": y,
+    "fitted_amplitude": y_pred_b,
+}).to_csv(Figure_Dir / "inventory_raw_fit.csv", index=False)
+pd.DataFrame({
+    "ground_proportion": x_fit_b, "fitted_mean": y_fit_b,
+    "mean_ci95_lower": confidence_lower_b, "mean_ci95_upper": confidence_upper_b,
+}).to_csv(Figure_Dir / "inventory_confidence_band.csv", index=False)
+report = {
+    "scope": "Visualization from released processed validation CSVs, not raw-observation reconstruction.",
+    "litterfall": {"n": len(df_litterfall_pool), "slope": slope_a,
+                  "intercept": intercept_a, "r": r_value_a, "p": p_value_a,
+                  "agreement_rmse": rmse_a},
+    "inventory": {"n": len(x), "slope": slope_b, "intercept": intercept_b,
+                  "r": r_value_b, "p": p_value_b, "residual_sd": residual_sd_b,
+                  "interval": "95% confidence interval of the OLS fitted mean"},
+    "gei": {"n": len(df_gei_patch), "r": all_r, "agreement_rmse": all_rmse},
+}
+(Figure_Dir / "ground_validation_report.json").write_text(
+    json.dumps(report, indent=2), encoding="utf-8")
+print(json.dumps(report, indent=2))
+plt.close(fig)
