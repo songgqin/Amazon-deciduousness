@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this code or the released analysis products, please cite the repository and the associated publication."
+title: "Amazon Deciduousness Phenology"
+type: software
+authors:
+  - family-names: Qin
+    given-names: Song
+    website: https://github.com/songgqin
+repository-code: https://github.com/songgqin/Amazon-deciduousness
+license: MIT
+version: main
+date-released: 2026-10-04
+keywords:
+  - Amazon Basin
+  - deciduousness
+  - phenology
+  - gross primary production
+  - remote sensing

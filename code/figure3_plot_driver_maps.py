@@ -283,7 +283,7 @@ fig = plt.figure(dpi=300)
 
 left, bottom, width, height = 0, 0.01, 0.98, 0.93
 proj = ccrs.PlateCarree()
-ax = fig.add_subplot([left, bottom, width, height], projection=proj)
+ax = fig.add_axes([left, bottom, width, height], projection=proj)
 
 ax.add_feature(cfeature.LAND, facecolor='white', zorder=1)
 ax.add_feature(cfeature.OCEAN, zorder=2)
@@ -406,7 +406,7 @@ fig = plt.figure(dpi=300)
 left, bottom, width, height = 0, 0.08, 0.98, 0.84
 
 proj = ccrs.PlateCarree()
-ax = fig.add_subplot([left, bottom, width, height], projection=proj)
+ax = fig.add_axes([left, bottom, width, height], projection=proj)
 
 ax.add_feature(cfeature.LAND, facecolor='white', zorder=1)
 ax.add_feature(cfeature.OCEAN, zorder=2)

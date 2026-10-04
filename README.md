@@ -21,7 +21,8 @@ of MIT rights to those materials.
 code/                       Cleaned Python scripts and helper modules
 data/                       Categorized local input data
 outputs/                    Generated figures and rasters
-requirements.txt            Python package requirements
+requirements.txt            Unpinned package inventory
+environment.yml             Tested Windows/Conda installation recipe
 ```
 
 ## Setup
@@ -36,15 +37,25 @@ git lfs pull
 git lfs fsck
 ```
 
-The current figure checks were run on Windows using Python 3.13.2, NumPy 2.2.0,
-pandas 2.3.1, OpenCV 4.12.0, Matplotlib 3.10.0, Cartopy 0.25.0 and GDAL 3.6.2.
-Figure 3 additionally requires the validated XGBoost 3.0.4 / SHAP 0.48.0 setup
-and an NVIDIA GPU for the original `gpu_hist` calculation.
+The tested Windows installation uses `environment.yml` (Python 3.13.2,
+NumPy 2.2.6, pandas 2.3.1, OpenCV 4.10.0, Matplotlib 3.10.0, Cartopy 0.25.0,
+GDAL 3.6.2, XGBoost 3.0.4, SHAP 0.48.0 and TensorFlow 2.20.0). Create it in a
+new environment rather than cloning an existing environment:
 
-`requirements.txt` is an unpinned inventory of dependencies across workflows,
-not a tested installation lockfile. A clean-environment installation and full
-end-to-end rerun are still pending. The former generic Python 3.10 recipe was
-not the environment used for the validated figures and has been removed.
+```bash
+conda env create -f environment.yml
+conda activate amazon-deciduousness
+```
+
+Figure 3 additionally requires the validated XGBoost 3.0.4 CUDA build and an
+NVIDIA GPU for the original `gpu_hist` calculation. The saved-product checks
+and the other workflows do not require a GPU.
+
+`requirements.txt` remains an unpinned inventory of dependencies across
+workflows. `environment.yml` is the tested installation recipe for the public
+code; platform-specific solver builds can still vary. The former generic
+Python 3.10 recipe was not the environment used for the validated figures and
+has been removed.
 
 Run scripts from the repository root so relative `data/...` and `outputs/...` paths resolve correctly. The scripts are divided with `# In[]` markers so they can also be opened and run as cells in PyCharm, Spyder, or Jupyter-style IDE workflows.
 
