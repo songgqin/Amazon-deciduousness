@@ -72,7 +72,7 @@ data/forest_mask/           MODIS land-cover masks and forest percentage data
 data/gpp/                   GPP inputs, SIF references, model outputs, and parameters
 data/leaf_age/              Leaf-age evaluation arrays and modeled leaf-age products
 data/phenocam/              Phenocam and Sentinel-2 site validation tables
-data/seasonality/           EVI, correlation, time-lag, and seasonality rasters
+data/seasonality/           EVI, time-lag, and seasonality rasters
 data/sentinel2/             Sentinel-2 site/year imagery for unmixing
 data/validation/            Eddy-flux and ground-validation tables
 ```
@@ -90,9 +90,21 @@ data/validation/            Eddy-flux and ground-validation tables
 
 `code/sentinel2_site_unmixing.py` runs the IG-ECAE Sentinel-2 unmixing workflow.
 
-`code/figure2_generate_correlation_lags.py` generates seasonality correlation and time-lag rasters.
+`code/figure2_generate_correlation_lags.py` generates only the Figure 2 time-lag
+raster. The cyclic correlation is an internal lag-selection calculation; no
+correlation map, p-value map, rainfall correlation, or PAR correlation output is
+written.
 
-`code/figure2_plot_seasonality.py` plots Figure 2 seasonality panels.
+`code/figure2_plot_seasonality.py` generates the Figure 2 seasonality curves,
+deciduousness-amplitude map, and categorical time-lag map from repository data.
+Use `--error-bars spatial` to reproduce the legacy 3 x 3 spatial-SD variant;
+the default `--error-bars interannual` is the manuscript-facing revised result.
+For a complete Figure 2 regeneration in a new output directory:
+
+```bash
+python code/figure2_generate_correlation_lags.py --output-dir outputs/figure2_lag
+python code/figure2_plot_seasonality.py --lag-path outputs/figure2_lag/time_lag_map.tif --output-dir outputs/figure2
+```
 
 `code/figure3_asynchrony_driver_analysis.py` runs the driver analysis for phenological asynchrony.
 

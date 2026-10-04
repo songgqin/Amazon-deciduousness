@@ -18,7 +18,7 @@ counted as reconstruction from raw satellite or field observations.
 | Caption | Status | Public entry point or available inputs | Remaining boundary |
 | --- | --- | --- | --- |
 | Main Fig. 1 | K | None; conceptual framework | Artwork is not a computational workflow |
-| Main Fig. 2 | B | `code/reproduce_main_figures.py`, `code/figure2_generate_correlation_lags.py`, `code/figure2_plot_seasonality.py`; seasonality, EVI, precipitation, lag and site inputs | Released lag/site calculation is validated; the full legacy amplitude-map styling lineage is not yet independently gated |
+| Main Fig. 2 | B | `code/reproduce_main_figures.py`, `code/figure2_generate_correlation_lags.py`, `code/figure2_plot_seasonality.py`; seasonality, EVI, precipitation, amplitude, lag and site inputs | Validated from released processed inputs; upstream satellite retrieval and the original raw-observation chain are outside this repository |
 | Main Fig. 3 | A | `code/figure3_asynchrony_driver_analysis.py`, `code/figure3_plot_driver_maps.py`; public driver inputs and forest mask | Validated model refit and driver raster; plotting helper was repaired in this release |
 | Main Fig. 4 | A | `code/reproduce_main_text.py`, three GPP generators and `code/gpp_evaluate_against_sif.py` | Regeneration starts from released processed inputs, calibrated parameters and leaf-age products |
 | ED Fig. 1 | B | Public basin boundary, site tables and observation metadata | Dedicated map-generation workflow and complete source-data audit remain |
@@ -68,8 +68,8 @@ counted as reconstruction from raw satellite or field observations.
 ## Current acceptance statement
 
 The public repository currently supports validated regeneration or checking of
-the main Figure 3, main Figure 4 and Extended Data Figure 7 workflows, plus
-the released-product Figure 2 checks. It does not yet provide complete raw-data
+the main Figure 2, main Figure 3, main Figure 4 and Extended Data Figure 7
+workflows from released processed inputs. It does not yet provide complete raw-data
 reproduction for all 47 captioned items. The next additions should target the
 highest-value **B** rows only when their source inputs and licensing can be
 documented; **C** rows must not be represented as reproducible merely because a
