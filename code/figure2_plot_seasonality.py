@@ -13,6 +13,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 import numpy as np
 import pandas as pd
 import cartopy.crs as ccrs
@@ -120,7 +121,19 @@ def map_panel(values, geo, locations, output, stem, label, is_lag=False):
         norm = mcolors.BoundaryNorm(np.arange(8), 7)
         bins = np.arange(-0.5, 7.5, 1)
     else:
-        cmap, norm, bins = plt.cm.YlOrRd, mcolors.Normalize(0, 100), 50
+        # Match the supplied deciduousness-amplitude reference: BrBG_r with
+        # a custom green-to-brown ramp and a fixed 0-50% display range.
+        base_cmap = plt.cm.BrBG_r
+        cmap = LinearSegmentedColormap.from_list(
+            "custom_brbg",
+            [(0 / 50, base_cmap(0.15)),
+             (15 / 50, base_cmap(0.50)),
+             (50 / 50, base_cmap(0.90))],
+            N=256,
+        )
+        cmap = ListedColormap(cmap(np.linspace(0, 1, 256)))
+        cmap.set_under(color=(0.83, 0.83, 0.83, 1.0))
+        norm, bins = mcolors.Normalize(0, 50), 50
     height, width = values.shape
     extent = [geo[0], geo[0] + geo[1] * width, geo[3] + geo[5] * height, geo[3]]
     artist = ax.imshow(values, extent=extent, origin="upper", transform=projection,
@@ -156,7 +169,7 @@ def map_panel(values, geo, locations, output, stem, label, is_lag=False):
         inset.set_xticks(np.arange(7))
         inset.set_ylim(0, 0.30)
     else:
-        inset.set_xlim(0, 100)
+        inset.set_xlim(0, 50)
     cax = fig.add_axes([0.15, 0.075, 0.70, 0.027])
     bar = fig.colorbar(artist, cax=cax, orientation="horizontal", drawedges=is_lag)
     if is_lag:
