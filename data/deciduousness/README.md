@@ -34,3 +34,25 @@ locations are recorded in `code/reproduce_main_figures.py`.
 
 The repository's MIT software license does not grant rights to these research
 datasets. Dataset-specific redistribution and reuse terms remain under audit.
+
+## Phenocam validation input
+
+`Composite_Data_250m_gf_3y.tif` is the 250 m, 12-month three-year composite
+used by the supplied Phenocam validation workflow. It is kept separate from
+the 5 km model input because the validation uses the 250 m grid and expands
+the repository's existing `data/forest_mask/MCD12Q1_Amazon.tif` forest mask to
+that grid with nearest-neighbour resampling.
+
+- Shape: 13,004 rows x 15,724 columns x 12 bands.
+- Band order: January through December.
+- Affine transform: (-79.77497863776252, 0.0022457882102978693, 0,
+  8.628408135496414, 0, -0.0022457882102978693).
+- SHA-256: `5D32D68C7E25ED2D0DCCED587355390D9CC5831E9533B1099559E58665629C2E`.
+
+`code/site_phenocam_evaluation.py` defaults to this file and writes a figure,
+per-site metrics CSV, and a JSON report to a new output directory. Its
+extraction, 2 x 2 search-window scoring, scaling, and metric calculations were
+compared against the first validation section of the supplied local reference
+script. The public run intentionally uses the repository's existing mask,
+whereas that local script uses a separate 500 m mask; therefore their support
+and final metrics should not be claimed to be numerically identical.

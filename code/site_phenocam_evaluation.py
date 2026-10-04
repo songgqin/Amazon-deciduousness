@@ -5,6 +5,9 @@
 # In[] Imports
 import os
 import copy
+import argparse
+import json
+from pathlib import Path
 import cv2
 import numpy as np
 from osgeo import gdal
@@ -35,6 +38,21 @@ from skimage.measure import find_contours
 from matplotlib.ticker import StrMethodFormatter
 
 # In[] Workflow
+ROOT = Path(__file__).resolve().parents[1]
+DATA = ROOT / "data"
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--dec-path", type=Path,
+                    default=DATA / "deciduousness" / "Composite_Data_250m_gf_3y.tif")
+parser.add_argument("--forest-mask", type=Path,
+                    default=DATA / "forest_mask" / "MCD12Q1_Amazon.tif")
+parser.add_argument("--output-dir", type=Path, default=ROOT / "outputs" / "phenocam")
+args = parser.parse_args()
+OUTPUT_DIR = args.output_dir.resolve()
+if OUTPUT_DIR == DATA or DATA in OUTPUT_DIR.parents:
+    raise ValueError("Outputs must not be written inside data/")
+if OUTPUT_DIR.exists():
+    raise FileExistsError("Choose a new --output-dir to preserve existing results")
+
 plt.rcParams['font.sans-serif'] = 'Helvetica'
 plt.rcParams["axes.unicode_minus"] = True
 matplotlib.use("Agg")
@@ -45,7 +63,7 @@ from numpy.lib.stride_tricks import sliding_window_view
 # In[] Functions
 def readTif_gdal(fileName, nbands=36):
     gdal.PushErrorHandler('CPLQuietErrorHandler')
-    dataset = gdal.Open(fileName)
+    dataset = gdal.Open(str(fileName))
     if dataset == None:
         print("cannot open file:" + fileName)
         return
@@ -143,8 +161,13 @@ def find_timeseries_custom(image_series, target_series, center_x, center_y,
 
     return max_r, best_window_series, best_window_pos
 
-raws_y, columns_x = 786, 650
-cls_modis_path = r'data/forest_mask/MCD12Q1_Amazon.tif'
+dec_path = args.dec_path.resolve()
+_geo, _prj, dec_month = readTif_gdal(str(dec_path))
+dec_month = dec_month.astype(np.float32)
+dec_month[dec_month > 1000] = np.nan
+columns_x, raws_y = dec_month.shape[:2]
+
+cls_modis_path = args.forest_mask.resolve()
 
 _, _, cls_md = readTif_gdal(cls_modis_path)
 
@@ -164,11 +187,11 @@ kernel = morphology.disk(1)
 forest_mask = morphology.opening(forest_mask, kernel)
 
 phencoam_site = ['BCI', 'K34', 'K67', 'ATTO', 'RJA']
-phenocam_dir = r'data/phenocam'
+phenocam_dir = DATA / "phenocam"
 
 phenocam_value_list = []
 for site_name in phencoam_site:
-    phenocam_path = os.path.join(phenocam_dir, '{}_Phenocam.csv'.format(site_name))
+    phenocam_path = phenocam_dir / '{}_Phenocam.csv'.format(site_name)
     phenocam_file = pd.read_csv(phenocam_path)
 
     if site_name == 'BCI':
@@ -194,15 +217,9 @@ for site_name in phencoam_site:
 
     phenocam_value_list.append(phenocam_seasonality)
 
-dec_path = r'data/deciduousness/Composite_Data_5km_gf_3y.tif'
-
-_geo, _prj, dec_month = readTif_gdal(dec_path)
-
-dec_month = dec_month.astype(np.float32)
-dec_month[dec_month > 1000] = np.nan
 dec_month[~forest_mask] = np.nan
 
-location_path = r'data/phenocam/ATTO_RJA_Location.csv'
+location_path = DATA / "phenocam" / "ATTO_RJA_Location.csv"
 loc_df = pd.read_csv(location_path)
 
 target_list = phenocam_value_list[1:]
@@ -230,7 +247,7 @@ for i, site_name in enumerate(target_site_list):
     dec_site_list = np.nanmean(best_series, axis=(0, 1))
     dec_value_list.append(dec_site_list)
 
-BCI_path = r'data/phenocam/BCI_Sentinel-2_Dec.csv'
+BCI_path = DATA / "phenocam" / "BCI_Sentinel-2_Dec.csv"
 BCI_df = pd.read_csv(BCI_path)
 BCI_dec_monthly = BCI_df['Deciduous'].values
 
@@ -326,5 +343,17 @@ ax.legend(loc='lower right', fontsize=6, frameon=True, ncol=1)
 print('mean r: %.2f' % np.mean(r_list))
 print('rmse: %.2f' % np.mean(rmse_list))
 
-os.makedirs(r'outputs/figures', exist_ok=True)
-plt.savefig(r'outputs/figures/Extended_Data_Fig2_Phenocam_Validation.png', dpi=300, bbox_inches='tight')
+OUTPUT_DIR.mkdir(parents=True)
+plt.savefig(OUTPUT_DIR / 'Extended_Data_Fig2_Phenocam_Validation.png', dpi=300, bbox_inches='tight')
+pd.DataFrame({"site": site_name_list, "r": r_list, "rmse": rmse_list}).to_csv(
+    OUTPUT_DIR / "phenocam_site_metrics.csv", index=False)
+(OUTPUT_DIR / "phenocam_validation_report.json").write_text(json.dumps({
+    "dec_path": str(dec_path),
+    "forest_mask": str(cls_modis_path),
+    "grid_shape": [int(columns_x), int(raws_y)],
+    "mean_r": float(np.mean(r_list)),
+    "mean_rmse": float(np.mean(rmse_list)),
+    "all_site_r": [float(x) for x in r_list],
+    "all_site_rmse": [float(x) for x in rmse_list],
+    "scope": "Validation from released processed deciduousness and phenocam inputs; not raw satellite reconstruction."
+}, indent=2), encoding="utf-8")

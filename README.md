@@ -81,6 +81,7 @@ data/validation/            Eddy-flux and ground-validation tables
 
 - `data/seasonality/BRDF_EVI_3years_mean.tif` for Figure 2 seasonality.
 - `data/deciduousness/Figure2_Deciduousness_Seasonality.tif` for revised Figure 2 site curves.
+- `data/deciduousness/Composite_Data_250m_gf_3y.tif` for 250 m Phenocam validation.
 - `data/gpp/inputs/GPP_BRDF_EVI.tif` for GPP experiments.
 - `data/deciduousness/Composite_Data_5km_gf_3y.tif` for main/GPP workflows.
 
@@ -122,7 +123,7 @@ mask; the Figure 3 and Figure 4 evaluation masks remain unchanged. See
 
 `code/gpp_evaluate_against_sif.py` evaluates GPP experiment outputs against SIF and eddy-flux benchmarks.
 
-`code/site_ground_evaluation.py` and `code/site_phenocam_evaluation.py` run site-level validation analyses.
+`code/site_ground_evaluation.py` and `code/site_phenocam_evaluation.py` run site-level validation analyses. The Phenocam workflow defaults to the 250 m composite and the existing `data/forest_mask/MCD12Q1_Amazon.tif` mask; it writes the validation figure, site metrics CSV, and JSON report to a new `outputs/phenocam/` subdirectory.
 
 ## Main-text Reproduction Release
 
