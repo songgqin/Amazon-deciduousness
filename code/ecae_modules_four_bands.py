@@ -151,6 +151,16 @@ def de_net(X, w_out):
     out = tf.matmul(X, w_out)
     return out
 
+
+def ecological_order_ok(shade, dec, ever):
+    """Check the expected shade, deciduous, and evergreen spectral order."""
+    return bool(
+        (shade[0] <= ever[0] < dec[0])
+        and (shade[1] < ever[1] <= dec[1] * 1.10)
+        and (shade[2] <= ever[2] < dec[2])
+    )
+
+
 def train_autoencoder(Img, Img_clean, endnum, endmember_list, epoch, learning_rate, batch_size=32, require_improvement=1, delta_increasing=0.0001, begin_with_zero=True, pre_initial=False, verbose=True):
     """
     :param Img: input data for training
@@ -266,9 +276,17 @@ def train_autoencoder(Img, Img_clean, endnum, endmember_list, epoch, learning_ra
                 print('Ever: ', ever_[[0, 1, 2, 3]])
             loss_all.append(ae_loss_)
             end_all.append(w_out_)
-            ae_lossforplt.append(final_loss_auto)
-            end_epo.append(w_out_)
-            eco_step += 1
+            if ecological_order_ok(shade_, dec_, ever_):
+                ae_lossforplt.append(final_loss_auto)
+                end_epo.append(w_out_)
+                eco_step += 1
+                if verbose:
+                    print('Match ecological ordering')
+            else:
+                eco_step = 0
+                if verbose:
+                    print('Ecological ordering rejected')
+                continue
             if step > 0:
                 if ae_loss_ < loss_all[step - 1]:
                     if ae_loss_ < best_loss - delta_increasing:
