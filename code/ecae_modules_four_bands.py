@@ -311,7 +311,7 @@ def train_autoencoder(Img, Img_clean, endnum, endmember_list, epoch, learning_ra
         min_index = ae_lossforplt.index(min(ae_lossforplt))
         final_end = end_epo[min_index].transpose()
     elif shade_initial[1] <= ever_initial[1] < dec_initial[1] * 1.1:
-        final_end = Ed_tmp_initial.transpose()
+        final_end = Ed_tmp_initial
     else:
         constant_w_out = tf.placeholder(tf.float32, shape=(initial_w_out.shape[0], initial_w_out.shape[1]))
         tf_img = tf.placeholder(tf.float32, shape=(Img_clean.shape[0], Img_clean.shape[1]))

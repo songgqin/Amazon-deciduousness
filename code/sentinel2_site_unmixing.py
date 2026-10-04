@@ -8,7 +8,7 @@ from osgeo import gdal
 import matplotlib.pyplot as plt
 from ecae_modules_four_bands import get_endmember_band_range_percentage, train_autoencoder, plot_endmember
 import unmixing
-from data_preprocessing import readTif_gdal, save_tif, gaussian_noise
+from data_preprocessing import readTif_gdal, save_tif_from_valid_pixels
 import numpy as np
 import os
 from sklearn.model_selection import train_test_split
@@ -188,13 +188,16 @@ def sentinel_2_multiyears_unmixing():
                 img_input = img_res[mask_ind]
 
                 abu_map = get_abundance_map(img_input, input_end)
-                final_abu_map = np.zeros((img_res.shape[0], 3))
-                final_abu_map[mask_ind] = abu_map
-                out_put_abu = final_abu_map.reshape(img.shape[0], img.shape[1], endnum)
-
                 abu_name = img_name.replace('.tif', '_abu.tif')
                 save_img_path = os.path.join(save_path, abu_name)
-                save_tif(out_put_abu, save_img_path, Geo_, Prj_, endnum)
+                save_tif_from_valid_pixels(
+                    abu_map,
+                    mask_ind.reshape(img.shape[0], img.shape[1]),
+                    save_img_path,
+                    Geo_,
+                    Prj_,
+                    nbands=endnum,
+                )
 
 # In[] Main
 if __name__ == '__main__':

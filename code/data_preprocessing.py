@@ -87,6 +87,58 @@ def save_tif(grouthTif, savePath, Geo_, Projection_, nbands):
             outputData.GetRasterBand(i + 1).SetNoDataValue(np.nan)
     del outputData
 
+
+def save_tif_from_valid_pixels(valid_data, valid_mask, savePath, Geo_, Projection_, nbands=3,
+                                nodata=-9999.0, block_rows=128):
+    """Write valid-pixel abundances in blocks without allocating a full output cube."""
+    gdal.UseExceptions()
+    valid_mask = np.asarray(valid_mask, dtype=bool)
+    valid_data = np.asarray(valid_data, dtype=np.float32)
+
+    if valid_mask.ndim != 2:
+        raise ValueError('valid_mask must be a two-dimensional row-column mask')
+    height, width = valid_mask.shape
+    expected_shape = (int(valid_mask.sum()), nbands)
+    if valid_data.shape != expected_shape:
+        raise ValueError(f'valid_data shape {valid_data.shape} does not match {expected_shape}')
+
+    driver = gdal.GetDriverByName('GTiff')
+    options = [
+        'TILED=YES',
+        'BLOCKXSIZE=256',
+        'BLOCKYSIZE=256',
+        'COMPRESS=DEFLATE',
+        'PREDICTOR=3',
+        'ZLEVEL=6',
+        'BIGTIFF=IF_SAFER',
+    ]
+    outputData = driver.Create(savePath, width, height, nbands, gdal.GDT_Float32, options=options)
+    if outputData is None:
+        raise RuntimeError(f'Could not create output raster: {savePath}')
+
+    outputData.SetGeoTransform(Geo_)
+    outputData.SetProjection(Projection_)
+    bands = [outputData.GetRasterBand(index + 1) for index in range(nbands)]
+    for band in bands:
+        band.SetNoDataValue(float(nodata))
+
+    valid_offset = 0
+    for row_start in range(0, height, block_rows):
+        row_stop = min(row_start + block_rows, height)
+        block_mask = valid_mask[row_start:row_stop]
+        block_count = int(block_mask.sum())
+        block = np.full((row_stop - row_start, width, nbands), nodata, dtype=np.float32)
+        if block_count:
+            block[block_mask] = valid_data[valid_offset:valid_offset + block_count]
+            valid_offset += block_count
+        for band_index, band in enumerate(bands):
+            band.WriteArray(block[:, :, band_index], xoff=0, yoff=row_start)
+
+    if valid_offset != valid_data.shape[0]:
+        raise RuntimeError('Not all valid-pixel abundances were written')
+    outputData.FlushCache()
+    outputData = None
+
 def save_tif_int(grouthTif, savePath, Geo_, Projection_, nbands):
 
     driver = gdal.GetDriverByName("GTiff")
