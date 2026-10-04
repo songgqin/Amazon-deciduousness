@@ -61,7 +61,7 @@ def main() -> None:
         drivers = ROOT / "data/drivers/asynchrony_driver_map_3type.tif"
         gpp = ROOT / "data/gpp/outputs"
         if args.regenerate:
-            command("figure2_generate_correlation_lags.py", "--output-dir", out / "seasonality")
+            command("figure2_generate_time_lags.py", "--output-dir", out / "seasonality")
             lag = out / "seasonality/time_lag_map.tif"
             report['comparisons'].append(check_raster(lag, ROOT / "data/seasonality/time_lag_map.tif"))
             command("figure3_asynchrony_driver_analysis.py", "--output-dir", out / "drivers", "--lag-path", lag)

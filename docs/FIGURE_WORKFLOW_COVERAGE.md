@@ -18,7 +18,7 @@ counted as reconstruction from raw satellite or field observations.
 | Caption | Status | Public entry point or available inputs | Remaining boundary |
 | --- | --- | --- | --- |
 | Main Fig. 1 | K | None; conceptual framework | Artwork is not a computational workflow |
-| Main Fig. 2 | B | `code/reproduce_main_figures.py`, `code/figure2_generate_correlation_lags.py`, `code/figure2_plot_seasonality.py`; seasonality, EVI, precipitation, amplitude, lag and site inputs | Validated from released processed inputs; upstream satellite retrieval and the original raw-observation chain are outside this repository |
+| Main Fig. 2 | B | `code/reproduce_main_figures.py`, `code/figure2_generate_time_lags.py`, `code/figure2_plot_seasonality.py`; seasonality, EVI, precipitation, amplitude, lag and site inputs | Validated from released processed inputs; upstream satellite retrieval and the original raw-observation chain are outside this repository |
 | Main Fig. 3 | A | `code/figure3_asynchrony_driver_analysis.py`, `code/figure3_plot_driver_maps.py`; public driver inputs and forest mask | Validated model refit and driver raster; plotting helper was repaired in this release |
 | Main Fig. 4 | A | `code/reproduce_main_text.py`, three GPP generators and `code/gpp_evaluate_against_sif.py` | Regeneration starts from released processed inputs, calibrated parameters and leaf-age products |
 | ED Fig. 1 | B | Public basin boundary, site tables and observation metadata | Dedicated map-generation workflow and complete source-data audit remain |

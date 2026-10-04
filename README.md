@@ -90,7 +90,7 @@ data/validation/            Eddy-flux and ground-validation tables
 
 `code/sentinel2_site_unmixing.py` runs the IG-ECAE Sentinel-2 unmixing workflow.
 
-`code/figure2_generate_correlation_lags.py` generates only the Figure 2 time-lag
+`code/figure2_generate_time_lags.py` generates only the Figure 2 time-lag
 raster. The cyclic correlation is an internal lag-selection calculation; no
 correlation map, p-value map, rainfall correlation, or PAR correlation output is
 written.
@@ -102,7 +102,7 @@ the default `--error-bars interannual` is the manuscript-facing revised result.
 For a complete Figure 2 regeneration in a new output directory:
 
 ```bash
-python code/figure2_generate_correlation_lags.py --output-dir outputs/figure2_lag
+python code/figure2_generate_time_lags.py --output-dir outputs/figure2_lag
 python code/figure2_plot_seasonality.py --lag-path outputs/figure2_lag/time_lag_map.tif --output-dir outputs/figure2
 ```
 
