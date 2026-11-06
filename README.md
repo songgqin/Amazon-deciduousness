@@ -27,7 +27,7 @@ The analyses address three connected questions:
 | `data/drivers/`, `data/climate/` | Environmental predictors and associated spatial inputs |
 | `data/gpp/`, `data/leaf_age/` | Productivity inputs, model parameters, leaf-age products, and released model results |
 | `data/phenocam/`, `data/validation/` | Site observations and validation tables |
-| `data/sentinel2/` | Sentinel-2 inputs for site-level unmixing |
+| `data/sentinel2/rja_legacy/` | 48 processed Sentinel-2 scenes and reference endmembers for the RJA site example |
 | `data/forest_mask/` | Land-cover masks |
 | `data/maintext_release/` | Companion manuscript data release |
 | `docs/` | Workflow coverage and data-provenance documentation |
@@ -48,7 +48,7 @@ git lfs pull
 git lfs fsck
 ```
 
-The complete LFS checkout is approximately 3.8 GB. The largest tracked input
+The complete LFS checkout is approximately 3.6 GB. The largest tracked input
 is `data/deciduousness/Composite_Data_250m_gf_3y.tif` at approximately 2 GB.
 Make sure the repository has enough local disk space before running the
 250 m validation workflow; a clone containing only LFS pointer files is not a
@@ -113,9 +113,11 @@ root as the working directory.
 deciduousness mapping.
 
 `code/sentinel2_site_unmixing.py` fits one set of IG-ECAE endmembers per year
-using all available scenes for the RJA site in 2019-2021. It reads the supplied
-multiband Sentinel-2 scenes and applies an EVI threshold of 0.15 to training
-pixels. The abundance solver uses all eligible reflectance pixels in each scene.
+using the 48 supplied multiband Sentinel-2 scenes for the RJA site in
+2019-2021. The default inputs are listed in
+[`scene_inventory.csv`](data/sentinel2/rja_legacy/scene_inventory.csv).
+The script applies an EVI threshold of 0.15 to training pixels only. The
+abundance solver uses all eligible reflectance pixels in each scene.
 The script exports endmember spectra, three-band abundance GeoTIFFs, and
 scene-level and monthly community deciduousness.
 
