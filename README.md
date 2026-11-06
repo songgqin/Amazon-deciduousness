@@ -48,7 +48,7 @@ git lfs pull
 git lfs fsck
 ```
 
-The complete LFS checkout is approximately 3.3 GB. The largest tracked input
+The complete LFS checkout is approximately 3.8 GB. The largest tracked input
 is `data/deciduousness/Composite_Data_250m_gf_3y.tif` at approximately 2 GB.
 Make sure the repository has enough local disk space before running the
 250 m validation workflow; a clone containing only LFS pointer files is not a
@@ -112,9 +112,24 @@ root as the working directory.
 **Purpose:** estimate vegetation fractions from Sentinel-2 imagery to support
 deciduousness mapping.
 
-`code/sentinel2_site_unmixing.py` implements the IG-ECAE site-level unmixing
-workflow. It uses the supplied Sentinel-2 inputs and associated helper modules.
-Outputs include estimated endmember spectra and per-scene abundance rasters.
+`code/sentinel2_site_unmixing.py` fits one set of IG-ECAE endmembers per year
+using all available scenes for the RJA site in 2019-2021. It reads the supplied
+multiband Sentinel-2 scenes and applies an EVI threshold of 0.15 to training
+pixels. The abundance solver uses all eligible reflectance pixels in each scene.
+The script exports endmember spectra, three-band abundance GeoTIFFs, and
+scene-level and monthly community deciduousness.
+
+```bash
+# Refit the endmembers and run unmixing.
+python code/sentinel2_site_unmixing.py --output-dir outputs/rja_refit
+
+# Replay the checked example with the supplied endmember matrices.
+python code/sentinel2_site_unmixing.py --use-reference-endmembers --output-dir outputs/rja_reference
+```
+
+Use a new output directory for each run. See the
+[RJA inputs and outputs](data/sentinel2/rja_legacy/README.md) for the
+reference endmember selection and scene sets.
 
 ### Seasonality and Phenological Asynchrony
 

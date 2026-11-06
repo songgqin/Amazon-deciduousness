@@ -71,10 +71,12 @@ Methods are described in the corresponding manuscript and Supplementary captions
 
 ## Site-Level Mapping Example
 
-`sentinel2_site_unmixing.py` was executed on the default Testing input for
-2019-2021, producing 87 abundance rasters. GDAL must load before TensorFlow in
-the tested Windows environment. Output grids, finite values and abundance sums
-were checked. The strict abundance-range check did not pass: some values were
-slightly outside [0, 1]. This is an execution test, not an accuracy or
-repeat-training reproducibility test; it does not establish basin-wide mapping
-reproduction.
+`sentinel2_site_unmixing.py` was executed on 48 multiband RJA scenes from
+2019-2021 with the EVI training mask. The refit and reference-endmember modes
+both completed. Reference replay reproduced all 48 abundance rasters
+pixel-for-pixel in the tested environment and matched the scene and monthly
+statistics. The independent refit used the same training sample counts, but
+its endmember selection differed from the reference run. Some refitted
+abundances were outside the [0, 1] range; the rasters retain the solver values.
+These checks establish site-example execution and reference replay, not
+independent accuracy or basin-wide mapping reproduction.
