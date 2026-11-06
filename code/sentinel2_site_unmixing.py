@@ -22,6 +22,7 @@ INPUT_DIR = ROOT / "data/sentinel2/rja_legacy"
 BAND_NUMBERS = [1, 2, 3, 7]
 ENDMEMBERS = ["shade", "deciduous", "evergreen"]
 MIN_TRAINING_EVI = 0.15
+DEFAULT_INITIALIZATION_SEED = 42
 
 
 def get_abundance_map(image, endmember_mean):
@@ -61,7 +62,7 @@ def get_training_pixels(image):
     return pixels, int(nonzero.sum()), int(eligible.sum())
 
 
-def fit_year(scenes):
+def fit_year(scenes, initialization_seed):
     samples, counts = [], []
     for relative_path in scenes.relative_path:
         image, _, _ = read_scene(INPUT_DIR / relative_path)
@@ -80,6 +81,7 @@ def fit_year(scenes):
         Img=training, Img_clean=training, endnum=3, endmember_list=ranges, epoch=5,
         learning_rate=1e-3, batch_size=512, require_improvement=1,
         delta_increasing=1e-4, begin_with_zero=False, pre_initial=True, verbose=True,
+        initialization_seed=initialization_seed,
     )
     return trained, initial, counts
 
@@ -115,7 +117,10 @@ def write_seasonality(rows, output_dir):
     plt.close(fig)
 
 
-def sentinel_2_multiyears_unmixing(output_dir, use_reference_endmembers=False):
+def sentinel_2_multiyears_unmixing(
+    output_dir, use_reference_endmembers=False,
+    initialization_seed=DEFAULT_INITIALIZATION_SEED,
+):
     gdal.UseExceptions()
     scenes = pd.read_csv(INPUT_DIR / "scene_inventory.csv", parse_dates=["date"])
     scenes = scenes.sort_values(["date", "relative_path"])
@@ -132,7 +137,7 @@ def sentinel_2_multiyears_unmixing(output_dir, use_reference_endmembers=False):
         folder = output_dir / str(year)
         folder.mkdir()
         if reference is None:
-            matrix, initial, counts = fit_year(group)
+            matrix, initial, counts = fit_year(group, initialization_seed)
             training_rows.extend(counts)
             outcome = "matches_initialization" if np.array_equal(matrix, initial) else "differs_from_initialization"
             plot_endmember(initial, f"RJA {year} initial endmembers")
@@ -152,6 +157,8 @@ def sentinel_2_multiyears_unmixing(output_dir, use_reference_endmembers=False):
         spectral_rows.extend(dict(year=year, band_index=band, dtype=matrix.dtype.name, **dict(zip(ENDMEMBERS, row)))
                              for band, row in enumerate(matrix))
         summaries.append(dict(year=year, scenes=len(group), outcome=outcome))
+        if reference is None:
+            summaries[-1]["initialization_seed"] = initialization_seed
         print(f"RJA {year}: {len(group)} scenes; {outcome}", flush=True)
         plot_endmember(matrix, f"RJA {year} endmembers")
         plt.savefig(folder / f"RJA_{year}_Endmember.png", dpi=300)
@@ -179,5 +186,9 @@ if __name__ == "__main__":
     parser.add_argument("--output-dir", type=Path, default=ROOT / "outputs/sentinel2_unmixing/RJA_legacy_evi")
     parser.add_argument("--use-reference-endmembers", action="store_true",
                         help="Use the supplied endmember matrices instead of refitting.")
+    parser.add_argument("--initialization-seed", type=int, default=DEFAULT_INITIALIZATION_SEED,
+                        help="TensorFlow initialization seed for refits (default: %(default)s).")
     args = parser.parse_args()
-    sentinel_2_multiyears_unmixing(args.output_dir, args.use_reference_endmembers)
+    sentinel_2_multiyears_unmixing(
+        args.output_dir, args.use_reference_endmembers, args.initialization_seed,
+    )

@@ -161,7 +161,22 @@ def ecological_order_ok(shade, dec, ever):
     )
 
 
-def train_autoencoder(Img, Img_clean, endnum, endmember_list, epoch, learning_rate, batch_size=32, require_improvement=1, delta_increasing=0.0001, begin_with_zero=True, pre_initial=False, verbose=True):
+def train_autoencoder(
+    Img, Img_clean, endnum, endmember_list, epoch, learning_rate,
+    batch_size=32, require_improvement=1, delta_increasing=0.0001,
+    begin_with_zero=True, pre_initial=False, verbose=True, initialization_seed=42,
+):
+    """Fit in a fresh graph so previous annual fits cannot affect initialization."""
+    with tf.Graph().as_default():
+        tf.set_random_seed(initialization_seed)
+        return _fit_autoencoder(
+            Img, Img_clean, endnum, endmember_list, epoch, learning_rate,
+            batch_size, require_improvement, delta_increasing,
+            begin_with_zero, pre_initial, verbose,
+        )
+
+
+def _fit_autoencoder(Img, Img_clean, endnum, endmember_list, epoch, learning_rate, batch_size, require_improvement, delta_increasing, begin_with_zero, pre_initial, verbose):
     """
     :param Img: input data for training
     :param Img_clean: the clean data for validating
@@ -231,7 +246,12 @@ def train_autoencoder(Img, Img_clean, endnum, endmember_list, epoch, learning_ra
         clip_op_1 = tf.assign(w_out[tf.nn.top_k(w_out[:, 3], k=3).indices[1], :], tf.clip_by_value(w_out[tf.nn.top_k(w_out[:, 3], k=3).indices[1], :], npv_range[1, :], npv_range[0, :]))
         clip_op_2 = tf.assign(w_out[tf.nn.top_k(w_out[:, 3], k=3).indices[2], :], tf.clip_by_value(w_out[tf.nn.top_k(w_out[:, 3], k=3).indices[2], :], shd_range[1, :], shd_range[0, :]))
     img_mse = tf.losses.mean_squared_error(X_test, de_result_2)
-    with tf.Session() as sess:
+    # Keep the CPU reduction order stable between independent refits.
+    session_config = tf.ConfigProto(
+        device_count={"GPU": 0}, intra_op_parallelism_threads=1,
+        inter_op_parallelism_threads=1, use_per_session_threads=True,
+    )
+    with tf.Session(config=session_config) as sess:
         sess.run(tf.global_variables_initializer())
         ae_lossforplt = []
         loss_all = []
@@ -239,8 +259,7 @@ def train_autoencoder(Img, Img_clean, endnum, endmember_list, epoch, learning_ra
         not_decrease_record = 0
         last_improvement = 0
         index_list = np.arange(num_of_pixels)
-        np.random.seed(42)
-        np.random.shuffle(index_list)
+        np.random.RandomState(42).shuffle(index_list)
         R = Img[index_list]
         R_clean = Img_clean[index_list]
         eco_step = 0
@@ -306,7 +325,6 @@ def train_autoencoder(Img, Img_clean, endnum, endmember_list, epoch, learning_ra
                     if verbose:
                         print('loss value do not decrease')
                     break
-    tf.keras.backend.clear_session()
     if len(ae_lossforplt) != 0:
         min_index = ae_lossforplt.index(min(ae_lossforplt))
         final_end = end_epo[min_index].transpose()
@@ -318,7 +336,7 @@ def train_autoencoder(Img, Img_clean, endnum, endmember_list, epoch, learning_ra
         tf_abu_init = tf.placeholder(tf.float32, shape=(initial_abu.shape[0], initial_abu.shape[1]))
         de_result_initial = tf.matmul(tf_abu_init, constant_w_out)
         final_loss_initial_ = tf.losses.mean_squared_error(tf_img, de_result_initial)
-        with tf.Session() as sess2:
+        with tf.Session(config=session_config) as sess2:
             sess2.run(tf.global_variables_initializer())
             final_loss_initial = sess2.run(final_loss_initial_, feed_dict={tf_img: Img_clean.astype(np.float32), tf_abu_init: initial_abu, constant_w_out: Ed_tmp_initial.transpose()})
         min_index = loss_all.index(min(loss_all))

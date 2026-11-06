@@ -18,8 +18,12 @@ example. Its rows are the four input bands in order and its three abundance
 columns are shade, deciduous and evergreen. The checked training run used
 the initialization fallback in 2019 and 2020, as no epoch passed the
 spectral ordering check; it used the lowest-error eligible epoch in 2021.
-The default command refits the endmembers and may produce different values.
-Use `--use-reference-endmembers` to replay the checked abundance calculation.
+The default command refits the endmembers from the supplied scenes with
+TensorFlow initialization seed 42 on a single CPU thread. The seed is logged
+in `training_summary.csv`. An alternative `--initialization-seed` changes the
+network initialization but not the training pixels or their order. The
+default refit can differ from the reference replay. Use
+`--use-reference-endmembers` to replay the checked abundance calculation.
 
 The EVI filter applies to endmember training only. For the seasonality
 summary, each solved pixel is assigned to the largest of its three

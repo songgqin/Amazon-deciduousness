@@ -72,11 +72,13 @@ Methods are described in the corresponding manuscript and Supplementary captions
 ## Site-Level Mapping Example
 
 `sentinel2_site_unmixing.py` was executed on 48 multiband RJA scenes from
-2019-2021 with the EVI training mask. The refit and reference-endmember modes
-both completed. Reference replay reproduced all 48 abundance rasters
-pixel-for-pixel in the tested environment and matched the scene and monthly
-statistics. The independent refit used the same training sample counts, but
-its endmember selection differed from the reference run. Some refitted
-abundances were outside the [0, 1] range; the rasters retain the solver values.
-These checks establish site-example execution and reference replay, not
+2019-2021 with the EVI training mask. Two independent refits with seed 42
+in the tested Windows environment produced byte-identical endmember tables,
+48 abundance rasters, and scene and monthly statistics. Reference replay
+was checked separately against the previous example and reproduced the
+reference abundance rasters and statistics. The refit need not match that
+reference. A refit with seed 43 used the same training pixels but changed
+the October estimate from 22.59% to 29.05%, so repeatability at a fixed seed
+does not imply stability across initializations. The rasters retain the
+solver values, which can fall outside [0, 1]. These checks do not establish
 independent accuracy or basin-wide mapping reproduction.

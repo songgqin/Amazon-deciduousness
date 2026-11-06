@@ -129,6 +129,11 @@ python code/sentinel2_site_unmixing.py --output-dir outputs/rja_refit
 python code/sentinel2_site_unmixing.py --use-reference-endmembers --output-dir outputs/rja_reference
 ```
 
+Refits use a fixed TensorFlow initialization seed (42) and single-threaded
+CPU training. Use `--initialization-seed` for a sensitivity check; changing
+it can change the fitted endmembers and the monthly curve. The reference
+mode reuses the supplied reference endmembers rather than training them again.
+
 Use a new output directory for each run. See the
 [RJA inputs and outputs](data/sentinel2/rja_legacy/README.md) for the
 reference endmember selection and scene sets.
