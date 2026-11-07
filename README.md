@@ -112,6 +112,12 @@ root as the working directory.
 **Purpose:** estimate vegetation fractions from Sentinel-2 imagery to support
 deciduousness mapping.
 
+The RJA Sentinel-2 example uses the index-guided, ecologically constrained
+autoencoder (IG-ECAE) introduced by
+[Wang et al. (2023)](https://doi.org/10.1016/j.rse.2022.113429) and evaluated
+across satellite sensors and spatial resolutions, including Sentinel-2, by
+[Song et al. (2024)](https://doi.org/10.1016/j.rse.2024.114027).
+
 `code/sentinel2_site_unmixing.py` fits one set of IG-ECAE endmembers per year
 using the 48 supplied multiband Sentinel-2 scenes for the RJA site in
 2019-2021. The scenes are named `RJA_S2_YYYY-MM-DD.tif` and listed in
