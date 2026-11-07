@@ -7,8 +7,10 @@ uses GeoTIFF bands 1, 2, 3, and 7 (blue, green, red, and near-infrared).
 See [data provenance](../../../docs/DATA_PROVENANCE.md) for the source and
 reuse terms.
 
-`scene_inventory.csv` lists the scene dates and SHA-256 checksums. All 48
-scenes are used for the annual training pools, subject to the pixel-level
+`scene_inventory.csv` lists the relative paths, acquisition dates, original
+filenames, and SHA-256 checksums. Each published GeoTIFF is named
+`RJA_S2_YYYY-MM-DD.tif` within its acquisition-year folder. All 48 scenes
+are used for the annual training pools, subject to the pixel-level
 EVI filter. The `legacy_comparison` flag identifies the 47 dates with
 abundance rasters in the earlier RJA comparison series. The additional scene
 of 2021-10-02 is included in the all-scenes summary.

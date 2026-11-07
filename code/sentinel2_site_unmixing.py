@@ -18,7 +18,7 @@ import unmixing
 
 
 ROOT = Path(__file__).resolve().parents[1]
-INPUT_DIR = ROOT / "data/sentinel2/rja_legacy"
+INPUT_DIR = ROOT / "data/sentinel2/rja_s2"
 BAND_NUMBERS = [1, 2, 3, 7]
 ENDMEMBERS = ["shade", "deciduous", "evergreen"]
 MIN_TRAINING_EVI = 0.15
@@ -183,7 +183,7 @@ def sentinel_2_multiyears_unmixing(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output-dir", type=Path, default=ROOT / "outputs/sentinel2_unmixing/RJA_legacy_evi")
+    parser.add_argument("--output-dir", type=Path, default=ROOT / "outputs/sentinel2_unmixing/rja_s2")
     parser.add_argument("--use-reference-endmembers", action="store_true",
                         help="Use the supplied endmember matrices instead of refitting.")
     parser.add_argument("--initialization-seed", type=int, default=DEFAULT_INITIALIZATION_SEED,

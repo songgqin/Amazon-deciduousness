@@ -27,7 +27,7 @@ The analyses address three connected questions:
 | `data/drivers/`, `data/climate/` | Environmental predictors and associated spatial inputs |
 | `data/gpp/`, `data/leaf_age/` | Productivity inputs, model parameters, leaf-age products, and released model results |
 | `data/phenocam/`, `data/validation/` | Site observations and validation tables |
-| `data/sentinel2/rja_legacy/` | 48 processed Sentinel-2 scenes and reference endmembers for the RJA site example |
+| `data/sentinel2/rja_s2/` | 48 processed Sentinel-2 scenes and reference endmembers for the RJA site example |
 | `data/forest_mask/` | Land-cover masks |
 | `data/maintext_release/` | Companion manuscript data release |
 | `docs/` | Workflow coverage and data-provenance documentation |
@@ -114,8 +114,8 @@ deciduousness mapping.
 
 `code/sentinel2_site_unmixing.py` fits one set of IG-ECAE endmembers per year
 using the 48 supplied multiband Sentinel-2 scenes for the RJA site in
-2019-2021. The default inputs are listed in
-[`scene_inventory.csv`](data/sentinel2/rja_legacy/scene_inventory.csv).
+2019-2021. The scenes are named `RJA_S2_YYYY-MM-DD.tif` and listed in
+[`scene_inventory.csv`](data/sentinel2/rja_s2/scene_inventory.csv).
 The script applies an EVI threshold of 0.15 to training pixels only. The
 abundance solver uses all eligible reflectance pixels in each scene.
 The script exports endmember spectra, three-band abundance GeoTIFFs, and
@@ -135,7 +135,7 @@ it can change the fitted endmembers and the monthly curve. The reference
 mode reuses the supplied reference endmembers rather than training them again.
 
 Use a new output directory for each run. See the
-[RJA inputs and outputs](data/sentinel2/rja_legacy/README.md) for the
+[RJA inputs and outputs](data/sentinel2/rja_s2/README.md) for the
 reference endmember selection and scene sets.
 
 ### Seasonality and Phenological Asynchrony
